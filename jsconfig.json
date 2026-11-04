@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "moduleDetection": "legacy",
+    "types": ["node"],
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "resolveJsonModule": true
+  },
+  "include": ["docs/**/*.js", "docs/**/*.d.ts", "scripts/**/*.js", "test/**/*.mjs"],
+  "exclude": ["node_modules", "docs/vendor"]
+}

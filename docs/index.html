@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sera</title>
+  <link rel="stylesheet" href="site/site.css">
+  <script src="site/pages.js"></script>
+  <script src="site/site.js"></script>
+</head>
+<body>
+<main>
+  <h1>sera</h1>
+  <p>
+    Web pages that analyze Elastic resources.  Paste JSON into a page, drop
+    a file on it, or load a file.  The data stays in your browser; nothing is
+    sent anywhere.
+  </p>
+  <ul class="page-list" id="page-list"></ul>
+  <p class="muted">
+    The source is at <a href="https://github.com/pmuellr/sera">github.com/pmuellr/sera</a>.
+  </p>
+</main>
+<script>
+  'use strict';
+  document.getElementById('page-list')?.append(...SITE_PAGES.map(function (page) {
+    return Site.h('li', {},
+      Site.h('a', { href: Site.pageUrl(page.id) }, page.title),
+      Site.h('div', { class: 'muted' }, page.description),
+    );
+  }));
+</script>
+</body>
+</html>

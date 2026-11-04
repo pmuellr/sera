@@ -1,0 +1,20 @@
+// @ts-check
+
+// The analysis pages, in menu order.  Each page lives in docs/<id>/index.html.
+// To add a page, copy an existing page's directory, and add an entry here.
+
+'use strict';
+
+/** @type {{ id: string; title: string; description: string }[]} */
+const SITE_PAGES = [
+  {
+    id: 'task-manager-health',
+    title: 'Task Manager health',
+    description: 'Analyze the output of the Kibana Task Manager health API, GET /api/task_manager/_health.',
+  },
+  {
+    id: 'event-log',
+    title: 'Event Log',
+    description: 'Analyze Kibana event log documents from .kibana-event-log-*: task runs, rule and connector executions, and errors.',
+  },
+];

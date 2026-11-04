@@ -1,0 +1,30 @@
+{
+  "name": "sera",
+  "version": "1.0.0",
+  "private": true,
+  "description": "static web pages that analyze Elastic resources",
+  "license": "MIT",
+  "author": "Patrick Mueller <pmuellr@apache.org> (https://github.com/pmuellr)",
+  "homepage": "https://pmuellr.github.io/sera/",
+  "scripts": {
+    "postinstall": "npm run vendor",
+    "vendor": "node scripts/vendor.js",
+    "serve": "python3 -m http.server --directory docs 8080",
+    "test": "node --test",
+    "check": "tsc -p jsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pmuellr/sera.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pmuellr/sera/issues"
+  },
+  "dependencies": {
+    "discover-url": "github:pmuellr/discover-url"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

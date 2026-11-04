@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>event log - sera</title>
+  <link rel="stylesheet" href="../site/site.css">
+  <script src="../site/pages.js"></script>
+  <script src="../site/site.js"></script>
+  <script src="../vendor/discover-url.js"></script>
+</head>
+<body>
+<main>
+  <h1>Event Log</h1>
+  <p>
+    Analyze Kibana event log documents, from the <code>.kibana-event-log-*</code>
+    indices.  Provide a search response, like the output of
+    <code>GET .kibana-event-log-*/_search?size=10000</code> in Dev Tools, or an
+    ES|QL response, a JSON array of documents, or NDJSON with one document per
+    line.  Multiple responses can be provided together.
+  </p>
+  <div id="input"></div>
+  <div id="output"></div>
+</main>
+<script src="event-log.js"></script>
+</body>
+</html>

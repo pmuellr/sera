@@ -1,0 +1,309 @@
+{
+  "id": "5b2de169-2785-441b-ae8c-186a1936b17d",
+  "timestamp": "2026-11-04T18:00:00.000Z",
+  "status": "warn",
+  "last_update": "2026-11-04T17:59:58.000Z",
+  "stats": {
+    "configuration": {
+      "timestamp": "2026-11-04T17:59:00.000Z",
+      "status": "OK",
+      "value": {
+        "request_capacity": 1000,
+        "monitored_aggregated_stats_refresh_rate": 60000,
+        "monitored_stats_running_average_window": 50,
+        "monitored_task_execution_thresholds": {
+          "custom": {},
+          "default": {
+            "error_threshold": 90,
+            "warn_threshold": 80
+          }
+        },
+        "poll_interval": 3000,
+        "capacity": {
+          "config": 10,
+          "as_workers": 10,
+          "as_cost": 20
+        },
+        "claim_strategy": "mget"
+      }
+    },
+    "workload": {
+      "timestamp": "2026-11-04T17:59:55.000Z",
+      "status": "OK",
+      "value": {
+        "count": 167,
+        "cost": 334,
+        "task_types": {
+          "alerting:.es-query": {
+            "count": 120,
+            "cost": 240,
+            "status": {
+              "idle": 110,
+              "running": 8,
+              "claiming": 2
+            }
+          },
+          "alerting:siem.queryRule": {
+            "count": 40,
+            "cost": 80,
+            "status": {
+              "idle": 39,
+              "failed": 1
+            }
+          },
+          "actions:.email": {
+            "count": 5,
+            "cost": 10,
+            "status": {
+              "idle": 3,
+              "running": 2
+            }
+          },
+          "apm-telemetry-task": {
+            "count": 1,
+            "cost": 2,
+            "status": {
+              "idle": 1
+            }
+          },
+          "session_cleanup": {
+            "count": 1,
+            "cost": 2,
+            "status": {
+              "unrecognized": 1
+            }
+          }
+        },
+        "non_recurring": 3,
+        "non_recurring_cost": 6,
+        "owner_ids": 2,
+        "schedule": [
+          [
+            "1m",
+            120
+          ],
+          [
+            "5m",
+            40
+          ],
+          [
+            "1h",
+            5
+          ],
+          [
+            "1d",
+            2
+          ]
+        ],
+        "overdue": 12,
+        "overdue_cost": 24,
+        "overdue_non_recurring": 1,
+        "estimated_schedule_density": [
+          3,
+          0,
+          2,
+          9,
+          1,
+          0,
+          4,
+          12,
+          0,
+          2,
+          1,
+          5,
+          0,
+          0,
+          3,
+          7,
+          1,
+          0,
+          2,
+          4
+        ],
+        "capacity_requirements": {
+          "per_minute": 128,
+          "per_hour": 2405,
+          "per_day": 2
+        }
+      }
+    },
+    "runtime": {
+      "timestamp": "2026-11-04T17:59:59.000Z",
+      "status": "warn",
+      "value": {
+        "polling": {
+          "last_successful_poll": "2026-11-04T17:59:58.500Z",
+          "last_polling_delay": "2026-11-04T17:50:00.000Z",
+          "claim_duration": {
+            "p50": 12,
+            "p90": 36,
+            "p95": 60,
+            "p99": 120
+          },
+          "duration": {
+            "p50": 150,
+            "p90": 450,
+            "p95": 750,
+            "p99": 1500
+          },
+          "claim_conflicts": {
+            "p50": 0,
+            "p90": 2,
+            "p95": 3,
+            "p99": 5
+          },
+          "claim_mismatches": {
+            "p50": 0,
+            "p90": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "result_frequency_percent_as_number": {
+            "Failed": 0,
+            "NoAvailableWorkers": 4,
+            "NoTasksClaimed": 30,
+            "RanOutOfCapacity": 40,
+            "RunningAtCapacity": 16,
+            "PoolFilled": 10
+          },
+          "persistence": {
+            "recurring": 95,
+            "non_recurring": 5
+          }
+        },
+        "drift": {
+          "p50": 45000,
+          "p90": 135000,
+          "p95": 225000,
+          "p99": 450000
+        },
+        "drift_by_type": {
+          "alerting:.es-query": {
+            "p50": 50000,
+            "p90": 150000,
+            "p95": 250000,
+            "p99": 500000
+          },
+          "alerting:siem.queryRule": {
+            "p50": 20000,
+            "p90": 60000,
+            "p95": 100000,
+            "p99": 200000
+          },
+          "actions:.email": {
+            "p50": 1500,
+            "p90": 4500,
+            "p95": 7500,
+            "p99": 15000
+          },
+          "apm-telemetry-task": {
+            "p50": 800,
+            "p90": 2400,
+            "p95": 4000,
+            "p99": 8000
+          }
+        },
+        "load": {
+          "p50": 60,
+          "p90": 95,
+          "p95": 100,
+          "p99": 100
+        },
+        "execution": {
+          "duration": {
+            "alerting:.es-query": {
+              "p50": 400,
+              "p90": 1200,
+              "p95": 2000,
+              "p99": 4000
+            },
+            "alerting:siem.queryRule": {
+              "p50": 9000,
+              "p90": 27000,
+              "p95": 45000,
+              "p99": 90000
+            },
+            "actions:.email": {
+              "p50": 700,
+              "p90": 2100,
+              "p95": 3500,
+              "p99": 7000
+            },
+            "apm-telemetry-task": {
+              "p50": 3000,
+              "p90": 9000,
+              "p95": 15000,
+              "p99": 30000
+            }
+          },
+          "duration_by_persistence": {
+            "recurring": {
+              "p50": 600,
+              "p90": 1800,
+              "p95": 3000,
+              "p99": 6000
+            },
+            "non_recurring": {
+              "p50": 700,
+              "p90": 2100,
+              "p95": 3500,
+              "p99": 7000
+            }
+          },
+          "persistence": {
+            "recurring": 97,
+            "non_recurring": 3
+          },
+          "result_frequency_percent_as_number": {
+            "alerting:.es-query": {
+              "Success": 100,
+              "RetryScheduled": 0,
+              "Failed": 0,
+              "status": "OK"
+            },
+            "alerting:siem.queryRule": {
+              "Success": 10,
+              "RetryScheduled": 5,
+              "Failed": 85,
+              "status": "warn"
+            },
+            "actions:.email": {
+              "Success": 50,
+              "RetryScheduled": 0,
+              "Failed": 50,
+              "status": "OK"
+            },
+            "apm-telemetry-task": {
+              "Success": 100,
+              "RetryScheduled": 0,
+              "Failed": 0,
+              "status": "OK"
+            }
+          }
+        }
+      }
+    },
+    "capacity_estimation": {
+      "timestamp": "2026-11-04T17:59:59.000Z",
+      "status": "warn",
+      "value": {
+        "observed": {
+          "observed_kibana_instances": 2,
+          "max_throughput_per_minute_per_kibana": 200,
+          "max_throughput_per_minute": 400,
+          "minutes_to_drain_overdue": 0.5,
+          "avg_recurring_required_throughput_per_minute": 128,
+          "avg_recurring_required_throughput_per_minute_per_kibana": 64,
+          "avg_required_throughput_per_minute": 130,
+          "avg_required_throughput_per_minute_per_kibana": 65
+        },
+        "proposed": {
+          "provisioned_kibana": 2,
+          "min_required_kibana": 3,
+          "avg_recurring_required_throughput_per_minute_per_kibana": 43,
+          "avg_required_throughput_per_minute_per_kibana": 44
+        }
+      }
+    }
+  }
+}
