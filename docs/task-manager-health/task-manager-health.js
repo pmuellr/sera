@@ -103,7 +103,7 @@ function render() {
   /** @type {HTMLElement[]} */
   const children = [];
   if (reports.length > 1) {
-    children.push(section(`${reports.length} health reports`,
+    children.push(Site.keyedSection('health reports', `${reports.length} health reports`,
       renderReportsTable(),
       h('p', {}, 'showing report ', renderReportSelector()),
     ));
@@ -169,7 +169,7 @@ function renderReport(report) {
     section('findings', Site.findingsList(analyze(report))),
     section('task types', renderTaskTypes(report)),
     renderCapacity(stats.capacity_estimation),
-    renderWorkload(stats.workload),
+    renderWorkload(stats.workload, stats),
     renderRuntime(stats.runtime),
     section('configuration', statusLine(stats.configuration), Site.keyValueTable(stats.configuration?.value)),
     h('details', {},
@@ -275,9 +275,10 @@ function renderTaskTypes(report) {
 
   /** @type {Column<Row>[]} */
   const columns = [
-    { label: 'task type', value: function (row) { return row.type; }, render: function (row) { return h('span', { class: 'mono' }, row.type); } },
+    { label: 'task type', value: function (row) { return row.type; }, render: function (row) {
+      return Site.discoverLink(h('span', { class: 'mono' }, row.type), taskRunsParams(report, row.type));
+    } },
     { label: 'count', value: function (row) { return row.workload.count; }, numeric: true, title: 'number of tasks of this type' },
-    { label: 'cost', value: function (row) { return row.workload.cost; }, numeric: true, title: 'total cost of the tasks of this type' },
     ...statusColumns.map(function (status) {
       return {
         label: status,
@@ -299,16 +300,14 @@ function renderTaskTypes(report) {
     { label: 'result status', value: function (row) { return row.results.status; }, render: function (row) {
       return row.results.status ? Site.statusBadge(row.results.status) : '';
     } },
-    { label: 'Discover', value: function () { return ''; }, render: function (row) {
-      return Site.discoverLink('task runs', taskRunsParams(report, row.type));
-    } },
+    { label: 'cost', value: function (row) { return row.workload.cost; }, numeric: true, title: 'total cost of the tasks of this type' },
   ];
 
   return h('div', {},
     h('p', { class: 'muted' },
       'Drift is how late tasks started; durations are how long they ran.  The success, retry, and failed ',
-      'percentages are of the recent runs of each task type.  The Discover links show the event log task runs ',
-      'for the hour before the report, using the Kibana URL and data view in the settings.'),
+      'percentages are of the recent runs of each task type.  Each task type links to Discover, showing its ',
+      'event log task runs for the hour before the report, using the Kibana URL and data view in the settings.'),
     table(columns, rows, { sortBy: 1, descending: true, filter: true }),
   );
 }
@@ -345,11 +344,11 @@ function renderCapacity(capacity) {
   );
 }
 
-/** @type {(workload: any) => HTMLElement} */
-function renderWorkload(workload) {
+/** @type {(workload: any, stats: any) => HTMLElement} */
+function renderWorkload(workload, stats) {
   const value = workload?.value || {};
   const schedule = Array.isArray(value.schedule) ? value.schedule : [];
-  const density = Array.isArray(value.estimated_schedule_density) ? value.estimated_schedule_density : [];
+  const density = Array.isArray(value.estimated_schedule_density) ? value.estimated_schedule_density.map(Number) : [];
 
   return section('workload',
     statusLine(workload),
@@ -365,19 +364,84 @@ function renderWorkload(workload) {
       h('h3', {}, 'capacity requirements'),
       Site.keyValueTable(value.capacity_requirements),
     ),
-    density.length > 0 && h('div', {},
-      h('h3', {}, 'estimated schedule density'),
-      h('p', { class: 'muted' }, 'tasks scheduled to run in each polling interval of the next minute'),
-      barChart(density.map(Number)),
-    ),
-    schedule.length > 0 && h('div', {},
-      h('h3', {}, 'schedules'),
-      table([
-        { label: 'interval', value: function (/** @type {any[]} */ row) { return row[0]; } },
-        { label: 'tasks', value: function (/** @type {any[]} */ row) { return row[1]; }, numeric: true },
-      ], schedule, { sortBy: 1, descending: true }),
-    ),
+    density.length > 0 && renderScheduleDensity(density, stats),
+    schedule.length > 0 && renderSchedules(schedule),
   );
+}
+
+/** @type {(density: number[], stats: any) => HTMLElement} */
+function renderScheduleDensity(density, stats) {
+  const config = get(stats, 'configuration.value') || {};
+  const pollMs = Number(config.poll_interval) || 3000;
+  const workers = Number(config.capacity?.as_workers ?? config.capacity?.config ?? config.max_workers) || undefined;
+  const instances = Number(get(stats, 'capacity_estimation.value.observed.observed_kibana_instances')) || 1;
+  const limit = workers && workers * instances;
+  const busiest = Math.max(...density);
+  const total = density.reduce(function (sum, count) { return sum + count; }, 0);
+
+  return h('div', {},
+    h('h3', {}, 'estimated schedule density'),
+    h('p', { class: 'muted' },
+      `The number of tasks scheduled to run in each ${formatMillis(pollMs)} polling cycle, for the `,
+      `${formatMillis(density.length * pollMs)} after the report: ${formatNumber(total)} tasks, `,
+      `with at most ${formatNumber(busiest)} in one cycle.  Bursts of tasks in a cycle can start late, `,
+      'if there are more than the Kibana instances can claim.',
+      limit ? `  The dashed line, at ${formatNumber(limit)} tasks, is the capacity of ${formatNumber(workers)} workers ` +
+        `times ${formatNumber(instances)} observed Kibana ${instances === 1 ? 'instance' : 'instances'}; ` +
+        'tasks that run longer than a cycle use capacity in later cycles too.' : ''),
+    barChart(density, {
+      binMs: pollMs,
+      xTitle: 'seconds after the report',
+      yTitle: 'tasks',
+      limit,
+    }),
+  );
+}
+
+/** @type {(schedule: any[]) => HTMLElement} */
+function renderSchedules(schedule) {
+  /** @type {Map<string, { ms: number | undefined; interval: string; tasks: number; strings: string[] }>} */
+  const byInterval = new Map();
+  for (const [text, count] of schedule) {
+    const ms = parseInterval(String(text));
+    const interval = ms === undefined ? String(text) : formatInterval(ms);
+    const row = byInterval.get(interval) ?? { ms, interval, tasks: 0, strings: [] };
+    row.tasks += Number(count) || 0;
+    if (!row.strings.includes(String(text))) row.strings.push(String(text));
+    byInterval.set(interval, row);
+  }
+  return h('div', {},
+    h('h3', {}, 'schedules'),
+    h('p', { class: 'muted' },
+      'The number of recurring tasks with each interval.  Intervals that are the same, like 60s and 1m, are combined.'),
+    table([
+      { label: 'interval', value: function (row) { return row.ms ?? Infinity; }, render: function (row) { return row.interval; } },
+      { label: 'tasks', value: function (row) { return row.tasks; }, numeric: true },
+      { label: 'specified as', value: function (row) { return row.strings.join(', '); } },
+    ], [...byInterval.values()], { sortBy: 1, descending: true }),
+  );
+}
+
+const INTERVAL_UNITS = /** @type {[string, number][]} */ ([['d', 86400000], ['h', 3600000], ['m', 60000], ['s', 1000]]);
+
+/**
+ * A Task Manager interval like 30s, 5m, 1h, or 1d, in ms.
+ * @type {(text: string) => number | undefined}
+ */
+function parseInterval(text) {
+  const match = /^\s*(\d+)\s*([smhd])\s*$/.exec(text);
+  if (!match) return undefined;
+  const unit = INTERVAL_UNITS.find(function (entry) { return entry[0] === match[2]; });
+  return unit && Number(match[1]) * unit[1];
+}
+
+/**
+ * The shortest way to write an interval: the largest unit it's a whole number of.
+ * @type {(ms: number) => string}
+ */
+function formatInterval(ms) {
+  const unit = INTERVAL_UNITS.find(function (entry) { return ms > 0 && ms % entry[1] === 0; });
+  return unit ? `${ms / unit[1]}${unit[0]}` : `${ms}ms`;
 }
 
 /** @type {(runtime: any) => HTMLElement} */
@@ -437,27 +501,90 @@ function percentTable(object) {
   ], Object.entries(object), { sortBy: 1, descending: true });
 }
 
-/** @type {(values: number[]) => SVGSVGElement} */
-function barChart(values) {
-  const width = 600;
-  const height = 80;
-  const max = Math.max(1, ...values);
-  const barWidth = width / Math.max(1, values.length);
-  const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height + 14}`, class: 'chart', style: 'max-width: 600px' });
+/**
+ * A bar chart of counts in consecutive time bins, with axes.  `limit` draws a
+ * dashed line at that count.
+ * @type {(values: number[], options: { binMs: number; xTitle: string; yTitle: string; limit?: number }) => SVGSVGElement}
+ */
+function barChart(values, { binMs, xTitle, yTitle, limit }) {
+  const left = 40;
+  const top = 8;
+  const plotWidth = 560;
+  const plotHeight = 180;
+  const bottom = top + plotHeight;
+  const yMax = niceCeiling(Math.max(1, ...values, limit ?? 0));
+  const barWidth = plotWidth / Math.max(1, values.length);
+  /** @type {(value: number) => number} */
+  function y(value) { return bottom - (value / yMax) * plotHeight; }
+
+  const svg = svgElement('svg', { viewBox: `0 0 ${left + plotWidth + 10} ${bottom + 36}`, class: 'chart', style: 'max-width: 640px' });
+
+  for (const tick of [0, yMax / 2, yMax]) {
+    svg.append(svgElement('line', { x1: left - 4, x2: left + plotWidth, y1: y(tick), y2: y(tick), class: 'axis' }));
+    svg.append(svgElement('text', { x: left - 6, y: y(tick) + 4, 'text-anchor': 'end' }, formatNumber(tick)));
+  }
+  svg.append(svgElement('text', {
+    x: 10, y: top + plotHeight / 2, 'text-anchor': 'middle', transform: `rotate(-90 10 ${top + plotHeight / 2})`,
+  }, yTitle));
+
+  const hoverLabel = svgElement('text', { class: 'chart-hover-label', 'text-anchor': 'middle', visibility: 'hidden' });
   values.forEach(function (value, index) {
-    const barHeight = (value / max) * height;
-    const rect = svgElement('rect', {
-      x: index * barWidth + 1,
-      y: height - barHeight,
+    const x = left + index * barWidth;
+    const from = (index * binMs) / 1000;
+    const to = ((index + 1) * binMs) / 1000;
+    const bar = svgElement('rect', {
+      x: x + 1,
+      y: y(value),
       width: Math.max(1, barWidth - 2),
-      height: barHeight,
+      height: bottom - y(value),
       fill: 'var(--accent)',
+      class: 'bar',
     });
-    rect.append(svgElement('title', {}, `interval ${index + 1}: ${value} tasks`));
-    svg.append(rect);
+    // covers the full height of the bin, so short bars are easy to hover
+    const target = svgElement('rect', { x, y: top, width: barWidth, height: plotHeight, fill: 'transparent' });
+    target.append(svgElement('title', {}, `${formatNumber(from, 1)}s to ${formatNumber(to, 1)}s: ${formatNumber(value)} tasks`));
+    target.addEventListener('mouseenter', function () {
+      svg.classList.add('hovering');
+      bar.classList.add('active');
+      hoverLabel.textContent = formatNumber(value);
+      hoverLabel.setAttribute('x', String(x + barWidth / 2));
+      hoverLabel.setAttribute('y', String(Math.max(top + 10, y(value) - 4)));
+      hoverLabel.setAttribute('visibility', 'visible');
+    });
+    target.addEventListener('mouseleave', function () {
+      svg.classList.remove('hovering');
+      bar.classList.remove('active');
+      hoverLabel.setAttribute('visibility', 'hidden');
+    });
+    svg.append(bar, target);
   });
-  svg.append(svgElement('text', { x: 0, y: height + 12 }, `max ${formatNumber(max)} tasks`));
+
+  const labelEvery = Math.max(1, Math.ceil(values.length / 10));
+  for (let index = 0; index <= values.length; index += labelEvery) {
+    const x = left + index * barWidth;
+    svg.append(svgElement('line', { x1: x, x2: x, y1: bottom, y2: bottom + 4, class: 'axis' }));
+    svg.append(svgElement('text', { x, y: bottom + 15, 'text-anchor': 'middle' }, formatNumber((index * binMs) / 1000, 1)));
+  }
+  svg.append(svgElement('text', { x: left + plotWidth / 2, y: bottom + 31, 'text-anchor': 'middle' }, xTitle));
+
+  if (limit) {
+    svg.append(svgElement('line', {
+      x1: left, x2: left + plotWidth, y1: y(limit), y2: y(limit),
+      stroke: 'var(--warn)', 'stroke-dasharray': '4 3', 'pointer-events': 'none',
+    }));
+  }
+  svg.append(hoverLabel);
   return /** @type {SVGSVGElement} */ (svg);
+}
+
+/**
+ * The value rounded up to a round number for an axis, like 300 for 260.
+ * @type {(value: number) => number}
+ */
+function niceCeiling(value) {
+  const power = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(function (multiple) { return multiple * power >= value; }) ?? 10;
+  return Math.round(step * power * 1e6) / 1e6;
 }
 
 /** @type {(tag: string, attrs: Record<string, string | number>, text?: string) => SVGElement} */

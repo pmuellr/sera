@@ -25,18 +25,25 @@ input.append(KibanaData.panel('alerts', function (loaded) {
   render();
 }));
 window.addEventListener('hashchange', render);
+Site.onTagsChange(render);
 
 function render() {
   if (!data) return;
-  const alerts = data.alerts?.records;
-  if (!alerts) {
+  const loaded = data;
+  const allAlerts = loaded.alerts?.records;
+  if (!allAlerts) {
     output.replaceChildren(KibanaData.notLoaded('alerts'));
     return;
   }
+  const selected = Site.selectedTags();
+  const alerts = allAlerts.filter(function (alert) { return Site.hasSelectedTags(KibanaData.alertTags(loaded, alert), selected); });
+  const tagFilter = Site.tagFilter(KibanaData.allTags(loaded),
+    selected.length > 0 ? `showing ${formatNumber(alerts.length)} of ${formatNumber(allAlerts.length)} alerts` : undefined);
 
   const { id, q } = KibanaData.hashParams();
   const byRule = section('alerts by rule', renderByRule(data, alerts, q));
   output.replaceChildren(
+    tagFilter ?? '',
     id ? renderDetail(data, id) : '',
     renderSummary(data, alerts),
     section('findings', Site.findingsList(analyze(data, alerts))),
@@ -81,7 +88,9 @@ function renderSummary(data, alerts) {
     .filter(function (time) { return time !== undefined; }).map(Number);
   return section('summary',
     h('div', { class: 'cards' },
-      card('alerts', KibanaData.countText(/** @type {DataSet<Alert>} */ (data.alerts))),
+      card('alerts', alerts.length === data.alerts?.records.length
+        ? KibanaData.countText(data.alerts)
+        : formatNumber(alerts.length)),
       card('rules', formatNumber(new Set(alerts.map(function (alert) { return alert.ruleId; })).size)),
       card('rule types', formatNumber(new Set(alerts.map(function (alert) { return alert.ruleType; })).size)),
       countBy(alerts.map(function (alert) { return alert.status; })).map(function ([status, count]) {
@@ -188,9 +197,9 @@ function alertStatus(alert) {
 function renderDetail(data, id) {
   const alert = data.alerts?.records.find(function (item) { return item.uuid === id; });
   if (!alert) {
-    return section(`alert ${id}`, h('p', { class: 'muted' }, 'This alert isn\'t in the loaded alerts. ', h('a', { href: '#' }, 'show all alerts')));
+    return Site.keyedSection('alert', `alert ${id}`, h('p', { class: 'muted' }, 'This alert isn\'t in the loaded alerts. ', h('a', { href: '#' }, 'show all alerts')));
   }
-  return section(`alert: ${alert.instanceId || alert.uuid}`,
+  return Site.keyedSection('alert', `alert: ${alert.instanceId || alert.uuid}`,
     h('p', {}, h('a', { href: '#' }, 'show all alerts')),
     h('div', { class: 'cards' },
       card('rule', ruleOf(data, alert)),

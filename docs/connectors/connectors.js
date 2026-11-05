@@ -21,6 +21,7 @@ input.append(KibanaData.panel('connectors', function (loaded) {
 }));
 window.addEventListener('hashchange', render);
 Site.onSettingsChange(render);
+Site.onTagsChange(render);
 
 /**
  * A connector referenced by the rules, which may or may not be loaded.
@@ -29,21 +30,35 @@ Site.onSettingsChange(render);
 
 function render() {
   if (!data) return;
-  const connectors = data.connectors?.records;
+  const loaded = data;
+  const allConnectors = loaded.connectors?.records;
   const { id, q } = KibanaData.hashParams();
-  if (!connectors) {
+
+  // connectors have no tags; they match when a rule that uses them has all the selected tags
+  const selected = Site.selectedTags();
+  const filtering = selected.length > 0 && loaded.rules !== undefined;
+  /** @type {(connectorId: string) => boolean} */
+  function isTagged(connectorId) {
+    return !filtering || rulesOf(loaded, connectorId).some(function (rule) { return Site.hasSelectedTags(rule.tags, selected); });
+  }
+  const refs = referenced(loaded).filter(function (ref) { return isTagged(ref.id); });
+
+  if (!allConnectors) {
     // the rules alone show which connectors are used
     output.replaceChildren(
+      renderTagFilter(loaded, selected, refs.length, referenced(loaded).length) ?? '',
       KibanaData.notLoaded('connectors'),
-      id ? renderDetail(data, id) : '',
-      data.rules ? section('connectors used by the rules', renderReferenced(data, referenced(data), q)) : '',
+      id ? renderDetail(loaded, id) : '',
+      loaded.rules ? section('connectors used by the rules', renderReferenced(loaded, refs, q)) : '',
     );
     return;
   }
 
-  const unloaded = referenced(data).filter(function (ref) { return !data?.connectorsById.has(ref.id); });
+  const connectors = allConnectors.filter(function (connector) { return isTagged(connector.id); });
+  const unloaded = refs.filter(function (ref) { return !loaded.connectorsById.has(ref.id); });
   const list = section('connectors', renderConnectors(data, connectors, q));
   output.replaceChildren(
+    renderTagFilter(loaded, selected, connectors.length, allConnectors.length) ?? '',
     id ? renderDetail(data, id) : '',
     renderSummary(data, connectors),
     section('findings', Site.findingsList(analyze(data, connectors))),
@@ -53,6 +68,17 @@ function render() {
   );
   if (id) window.scrollTo(0, output.offsetTop);
   else if (q) list.scrollIntoView();
+}
+
+/** @type {(data: KibanaDataSets, selected: string[], shown: number, total: number) => HTMLElement | undefined} */
+function renderTagFilter(data, selected, shown, total) {
+  let note;
+  if (selected.length > 0 && !data.rules) {
+    note = 'the rules aren\'t loaded, so the connectors aren\'t filtered by the rules\' tags';
+  } else if (selected.length > 0) {
+    note = `showing ${formatNumber(shown)} of ${formatNumber(total)} connectors, those used by rules with the tags`;
+  }
+  return Site.tagFilter(KibanaData.allTags(data), note);
 }
 
 /** @type {(data: KibanaDataSets) => Referenced[]} */
@@ -96,7 +122,9 @@ function ruleCount(data, connectorId) {
 function renderSummary(data, connectors) {
   return section('summary',
     h('div', { class: 'cards' },
-      card('connectors', KibanaData.countText(/** @type {DataSet<Connector>} */ (data.connectors))),
+      card('connectors', connectors.length === data.connectors?.records.length
+        ? KibanaData.countText(data.connectors)
+        : formatNumber(connectors.length)),
       card('connector types', formatNumber(new Set(connectors.map(function (connector) { return connector.type; })).size)),
       card('spaces', spaceCount(connectors)),
       card('preconfigured', formatNumber(connectors.filter(function (connector) { return connector.preconfigured; }).length)),
@@ -216,7 +244,7 @@ function renderDetail(data, id) {
 
   if (!connector) {
     const ref = referenced(data).find(function (item) { return item.id === id; });
-    return section(`connector ${id}`,
+    return Site.keyedSection('connector', `connector ${id}`,
       h('p', {}, h('a', { href: '#' }, 'show all connectors'), ' | ', discover),
       h('p', { class: 'muted' },
         ref?.preconfigured ? 'This is a preconfigured connector, defined in kibana.yml, so it isn\'t a saved object. '
@@ -226,7 +254,7 @@ function renderDetail(data, id) {
     );
   }
 
-  return section(`connector: ${connector.name || connector.id}`,
+  return Site.keyedSection('connector', `connector: ${connector.name || connector.id}`,
     h('p', {}, h('a', { href: '#' }, 'show all connectors'), ' | ', discover),
     h('div', { class: 'cards' },
       card('connector type', h('span', { class: 'mono' }, connector.type)),

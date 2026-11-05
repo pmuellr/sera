@@ -48,6 +48,12 @@ const ROOT_URL = new URL('..', /** @type {HTMLScriptElement} */ (document.curren
 const SETTINGS_KEY = 'sera.settings';
 const SETTINGS_EVENT = 'sera-settings-changed';
 const INPUT_KEY_PREFIX = 'sera.input.';
+const COLLAPSED_KEY = 'sera.collapsed';
+const TAGS_KEY = 'sera.tags';
+const RECENT_TAGS_KEY = 'sera.tags.recent';
+const MAX_RECENT_TAGS = 10;
+const KNOWN_TAGS_KEY = 'sera.tags.known';
+const TAGS_EVENT = 'sera-tags-changed';
 
 // textareas get slow with very large values, so larger input isn't shown in them
 const MAX_TEXTAREA_LENGTH = 2 * 1024 * 1024;
@@ -156,6 +162,209 @@ function setSettings(settings) {
 /** @type {(fn: (settings: Settings) => void) => void} */
 function onSettingsChange(fn) {
   window.addEventListener(SETTINGS_EVENT, function () { fn(getSettings()); });
+}
+
+// ---------------------------------------------------------------------------
+// the rule tags filter, shared by the pages, saved in localStorage
+// ---------------------------------------------------------------------------
+
+/** @type {(key: string) => any} */
+function readJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+/** @type {(key: string, value: unknown) => void} */
+function writeJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // not saved, in private browsing
+  }
+}
+
+/** @type {() => string[]} */
+function selectedTags() {
+  const tags = readJson(TAGS_KEY);
+  return Array.isArray(tags) ? tags.map(String) : [];
+}
+
+/** @type {(tags: string[]) => void} */
+function setSelectedTags(tags) {
+  const added = tags.filter(function (tag) { return !selectedTags().includes(tag); });
+  writeJson(TAGS_KEY, tags);
+  if (added.length > 0) {
+    writeJson(RECENT_TAGS_KEY, [...added, ...recentTags().filter(function (tag) { return !added.includes(tag); })]
+      .slice(0, MAX_RECENT_TAGS));
+  }
+  window.dispatchEvent(new CustomEvent(TAGS_EVENT));
+}
+
+/**
+ * The tags selected most recently, most recent first.
+ * @type {() => string[]}
+ */
+function recentTags() {
+  const tags = readJson(RECENT_TAGS_KEY);
+  return Array.isArray(tags) ? tags.map(String) : [];
+}
+
+function clearRecentTags() {
+  writeJson(RECENT_TAGS_KEY, []);
+  window.dispatchEvent(new CustomEvent(TAGS_EVENT));
+}
+
+/**
+ * Call `fn` when the selected tags change, on this page or in another tab.
+ * @type {(fn: () => void) => void}
+ */
+function onTagsChange(fn) {
+  window.addEventListener(TAGS_EVENT, fn);
+  window.addEventListener('storage', function (event) { if (event.key === TAGS_KEY) fn(); });
+}
+
+/**
+ * Remember the tags in a page's data, so the other pages offer them too.
+ * @type {(source: string, tags: string[]) => void}
+ */
+function rememberTags(source, tags) {
+  const known = readJson(KNOWN_TAGS_KEY) || {};
+  known[source] = [...new Set(tags)].sort();
+  writeJson(KNOWN_TAGS_KEY, known);
+}
+
+/** @type {() => string[]} */
+function knownTags() {
+  const known = readJson(KNOWN_TAGS_KEY) || {};
+  return Object.values(known).flat().map(String);
+}
+
+/**
+ * Whether the tags include every selected tag.
+ * @type {(tags: string[], selected?: string[]) => boolean}
+ */
+function hasSelectedTags(tags, selected = selectedTags()) {
+  return selected.every(function (tag) { return tags.includes(tag); });
+}
+
+/**
+ * The state of the tag dropdown, kept while the page re-renders it after each
+ * change to the selected tags.
+ */
+const tagMenu = { open: false, query: '', scrollTop: 0 };
+
+document.addEventListener('click', function (event) {
+  const target = /** @type {Element | null} */ (event.target);
+  if (tagMenu.open && !target?.closest?.('.tag-dropdown')) closeTagMenus();
+});
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape' && tagMenu.open) closeTagMenus();
+});
+
+function closeTagMenus() {
+  tagMenu.open = false;
+  for (const menu of document.querySelectorAll('details.tag-dropdown')) menu.removeAttribute('open');
+}
+
+/**
+ * A dropdown to select rule tags: those given, the ones other pages
+ * remembered, and the selected and recently selected ones, which are listed
+ * first.  What's shown must have all the selected tags.  `note` describes
+ * what's shown.
+ * @type {(tags: string[], note?: Child) => HTMLElement | undefined}
+ */
+function tagFilter(tags, note) {
+  const selected = selectedTags();
+  const recent = [...new Set([...recentTags(), ...selected])];
+  const others = [...new Set([...tags, ...knownTags()])]
+    .filter(function (tag) { return !recent.includes(tag); })
+    .sort(function (a, b) { return a.localeCompare(b); });
+  const count = recent.length + others.length;
+  if (count === 0) return undefined;
+
+  const search = h('input', {
+    type: 'search',
+    placeholder: `search ${formatNumber(count)} tags`,
+    value: tagMenu.query,
+    oninput: function () {
+      tagMenu.query = search.value;
+      applySearch();
+    },
+  });
+  const options = h('div', { class: 'tag-options' },
+    recent.length > 0 && tagGroup('recent', recent),
+    others.length > 0 && tagGroup(recent.length > 0 ? 'all tags' : undefined, others),
+  );
+  const empty = h('div', { class: 'muted tag-none' }, 'no matching tags');
+  applySearch();
+
+  const menu = h('details', { class: 'tag-dropdown', open: tagMenu.open },
+    h('summary', { title: selected.join(', ') },
+      h('span', { class: 'muted' }, 'rule tags: '),
+      selected.length === 0 ? 'any' : selected.length <= 2 ? selected.join(' and ') : `${formatNumber(selected.length)} tags`),
+    h('div', { class: 'tag-menu' },
+      search,
+      options,
+      empty,
+      h('div', { class: 'tag-menu-footer' },
+        h('span', { class: 'muted' }, 'shows what has all the selected tags'),
+        recentTags().length > 0 && h('button', { type: 'button', class: 'tag-clear', onclick: clearRecentTags }, 'clear history'),
+      ),
+    ),
+  );
+  menu.addEventListener('toggle', function () {
+    tagMenu.open = menu.open;
+    if (menu.open) search.focus();
+  });
+  if (tagMenu.open) {
+    requestAnimationFrame(function () {
+      options.scrollTop = tagMenu.scrollTop;
+    });
+  }
+
+  return h('div', { class: 'tag-filter' },
+    menu,
+    selected.length > 0 && h('button', { type: 'button', class: 'tag-clear', onclick: function () { setSelectedTags([]); } }, 'clear'),
+    note && h('span', { class: 'muted tag-filter-note' }, note),
+  );
+
+  /** @type {(heading: string | undefined, list: string[]) => HTMLElement} */
+  function tagGroup(heading, list) {
+    return h('div', { class: 'tag-group' },
+      heading && h('div', { class: 'tag-group-heading' }, heading),
+      list.map(function (tag) {
+        const isSelected = selected.includes(tag);
+        return h('label', { class: `tag-option${isSelected ? ' selected' : ''}`, 'data-tag': tag.toLowerCase() },
+          h('input', {
+            type: 'checkbox',
+            checked: isSelected,
+            onchange: function () {
+              tagMenu.scrollTop = options.scrollTop;
+              setSelectedTags(isSelected ? selected.filter(function (item) { return item !== tag; }) : [...selected, tag]);
+            },
+          }),
+          ' ', tag);
+      }));
+  }
+
+  function applySearch() {
+    const query = tagMenu.query.trim().toLowerCase();
+    let shown = 0;
+    for (const group of /** @type {HTMLElement[]} */ ([...options.children])) {
+      let groupShown = 0;
+      for (const option of /** @type {HTMLElement[]} */ ([...group.querySelectorAll('.tag-option')])) {
+        const matches = query === '' || String(option.dataset.tag).includes(query);
+        option.hidden = !matches;
+        if (matches) groupShown++;
+      }
+      group.hidden = groupShown === 0;
+      shown += groupShown;
+    }
+    empty.hidden = shown > 0;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -482,9 +691,61 @@ function append(parent, children) {
   }
 }
 
-/** @type {(title: string, ...children: Child[]) => HTMLElement} */
+/**
+ * A section, which can be collapsed by clicking its title.  Which sections of
+ * the page are collapsed is saved in localStorage, by title.
+ * @type {(title: string, ...children: Child[]) => HTMLElement}
+ */
 function section(title, ...children) {
-  return h('section', {}, h('h2', {}, title), children);
+  return keyedSection(title, title, ...children);
+}
+
+/**
+ * A section whose collapsed state is saved by `key` rather than its title,
+ * for titles that change, like the name of the rule shown.
+ * @type {(key: string, title: string, ...children: Child[]) => HTMLElement}
+ */
+function keyedSection(key, title, ...children) {
+  const details = h('details', { class: 'section', open: !collapsedSections().includes(key) },
+    h('summary', {}, h('h2', {}, title)),
+    children);
+  details.addEventListener('toggle', function () { setSectionCollapsed(key, !details.open); });
+  return h('section', {}, details);
+}
+
+/** @type {() => string} */
+function pageKey() {
+  return normalizeUrl(location.href).slice(ROOT_URL.length) || 'index.html';
+}
+
+/** @type {() => Record<string, string[]>} */
+function readCollapsed() {
+  try {
+    const value = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+/** @type {() => string[]} */
+function collapsedSections() {
+  const keys = readCollapsed()[pageKey()];
+  return Array.isArray(keys) ? keys : [];
+}
+
+/** @type {(key: string, collapsed: boolean) => void} */
+function setSectionCollapsed(key, collapsed) {
+  const all = readCollapsed();
+  const keys = collapsedSections().filter(function (item) { return item !== key; });
+  if (collapsed) keys.push(key);
+  if (keys.length > 0) all[pageKey()] = keys;
+  else delete all[pageKey()];
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify(all));
+  } catch {
+    // not saved, in private browsing
+  }
 }
 
 /** @type {(label: string, value: Child) => HTMLElement} */
@@ -800,6 +1061,10 @@ function errorMessage(err) {
 // Discover links, built with discover-url.js
 // ---------------------------------------------------------------------------
 
+// Discover skips the first search when the "Search on page load" advanced
+// setting is off, unless auto-refresh is on; a day's interval runs it once.
+const DISCOVER_REFRESH_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Build a Discover URL with the Kibana URL from the settings, and the event
  * log data view unless another is given.  Returns undefined if discover-url.js
@@ -811,7 +1076,7 @@ function discoverHref(params) {
   const settings = getSettings();
   const dataView = params.esql ? undefined : (params.dataView || settings.eventLogDataView);
   try {
-    return discoverUrl.buildDiscoverUrl({ kibana: settings.kibanaUrl, ...params, dataView });
+    return discoverUrl.buildDiscoverUrl({ kibana: settings.kibanaUrl, refresh: DISCOVER_REFRESH_MS, ...params, dataView });
   } catch (err) {
     console.warn('unable to build Discover URL:', err);
     return undefined;
@@ -859,6 +1124,11 @@ return {
   getSettings,
   setSettings,
   onSettingsChange,
+  selectedTags,
+  onTagsChange,
+  rememberTags,
+  hasSelectedTags,
+  tagFilter,
   inputPanel,
   saveInput,
   parseJsonValues,
@@ -867,6 +1137,7 @@ return {
   h,
   append,
   section,
+  keyedSection,
   card,
   listOf,
   statusBadge,

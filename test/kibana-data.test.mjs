@@ -173,6 +173,23 @@ test('finds the space in file names', function () {
   assert.equal(kibanaData.spaceFromFileName('rules-search.json'), undefined);
 });
 
+test('reads the rule tags of alerts, and combines them with the rules\' tags', function () {
+  const { records } = kibanaData.classify([fixture('rules-search.json'), fixture('alerts-search.json')]);
+  const alert = records.alerts.find(function (/** @type {Alert} */ item) { return item.ruleName === 'High CPU on hosts'; });
+  assert.deepEqual([...alert.tags], ['infra']);
+
+  const rule = records.rules.find(function (/** @type {Rule} */ item) { return item.id === alert.ruleId; });
+  const data = { rulesById: new Map([[rule.id, { ...rule, tags: ['infra', 'prod'] }]]), rules: undefined, alerts: undefined };
+  assert.deepEqual([...kibanaData.alertTags(/** @type {any} */ (data), alert)], ['infra', 'prod']);
+
+  const all = kibanaData.allTags(/** @type {any} */ ({ rules: { records: records.rules }, alerts: { records: records.alerts } }));
+  assert.deepEqual([...all].sort(), ['infra', 'logs', 'noisy', 'siem']);
+
+  assert.equal(site.hasSelectedTags(['infra', 'prod'], ['infra', 'prod']), true);
+  assert.equal(site.hasSelectedTags(['infra'], ['infra', 'prod']), false);
+  assert.equal(site.hasSelectedTags([], []), true);
+});
+
 test('finds the space in requests', function () {
   assert.equal(kibanaData.spaceFromRequest('GET kbn:/api/alerting/rules/_find?per_page=10000'), 'default');
   assert.equal(kibanaData.spaceFromRequest('GET kbn:/s/my_team-2/api/actions/connectors'), 'my_team-2');

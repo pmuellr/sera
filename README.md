@@ -27,6 +27,15 @@ of data; the requests leave out API keys and secrets, and the pages drop them
 if they're there anyway.  The data stays until it's cleared on one of the
 pages.
 
+The rules, alerts, and event log pages have a dropdown to select rule tags,
+from the rules, the alerts' `kibana.alert.rule.tags`, and the event log's.
+Selecting tags filters those pages to what has all of them; the selection is
+shared by the pages, and saved in the browser's local storage, along with the
+last 10 tags selected, which are listed first until the history is cleared.
+Event log documents match with their own tags, or those of their rules, when
+the rules are loaded.  The connectors page uses it too, when the rules are loaded:
+connectors match when a rule that uses them has all of the selected tags.
+
 The rules and connectors APIs return one space's rules and connectors, and
 don't say which space.  The home page reads the space of each response from
 its request; files named like `rules-space-<space id>.json` are read as that

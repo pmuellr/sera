@@ -25,18 +25,24 @@ input.append(KibanaData.panel('rules', function (loaded) {
 }));
 window.addEventListener('hashchange', render);
 Site.onSettingsChange(render);
+Site.onTagsChange(render);
 
 function render() {
   if (!data) return;
-  const rules = data.rules?.records;
-  if (!rules) {
+  const allRules = data.rules?.records;
+  if (!allRules) {
     output.replaceChildren(KibanaData.notLoaded('rules'));
     return;
   }
+  const selected = Site.selectedTags();
+  const rules = allRules.filter(function (rule) { return Site.hasSelectedTags(rule.tags, selected); });
+  const tagFilter = Site.tagFilter(KibanaData.allTags(data),
+    selected.length > 0 ? `showing ${formatNumber(rules.length)} of ${formatNumber(allRules.length)} rules` : undefined);
 
   const { id, q } = KibanaData.hashParams();
   const list = section('rules', renderRules(data, rules, q));
   output.replaceChildren(
+    tagFilter ?? '',
     id ? renderDetail(data, id) : '',
     renderSummary(data, rules),
     section('findings', Site.findingsList(analyze(data, rules))),
@@ -78,7 +84,9 @@ function renderSummary(data, rules) {
   const enabled = rules.filter(function (rule) { return rule.enabled; });
   return section('summary',
     h('div', { class: 'cards' },
-      card('rules', KibanaData.countText(/** @type {DataSet<Rule>} */ (data.rules))),
+      card('rules', rules.length === data.rules?.records.length
+        ? KibanaData.countText(data.rules)
+        : formatNumber(rules.length)),
       card('enabled', formatNumber(enabled.length)),
       card('disabled', formatNumber(rules.length - enabled.length)),
       card('rule types', formatNumber(new Set(rules.map(function (rule) { return rule.type; })).size)),
@@ -202,13 +210,13 @@ function slowerThanInterval(rule) {
 function renderDetail(data, id) {
   const rule = data.rulesById.get(id);
   if (!rule) {
-    return section(`rule ${id}`, h('p', { class: 'muted' }, 'This rule isn\'t in the loaded rules. ', h('a', { href: '#' }, 'show all rules')));
+    return Site.keyedSection('rule', `rule ${id}`, h('p', { class: 'muted' }, 'This rule isn\'t in the loaded rules. ', h('a', { href: '#' }, 'show all rules')));
   }
 
   const alerts = data.alertsByRule.get(rule.id) || [];
   const message = rule.statusMessage || rule.outcomeMessage;
 
-  return section(`rule: ${rule.name || rule.id}`,
+  return Site.keyedSection('rule', `rule: ${rule.name || rule.id}`,
     h('p', {}, h('a', { href: '#' }, 'show all rules'), ' | ',
       Site.discoverLink('event log executions in Discover', {
         tabLabel: `rule: ${rule.name || rule.id}`,

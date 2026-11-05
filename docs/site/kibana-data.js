@@ -114,6 +114,7 @@
  *   instanceId: string | undefined;
  *   actionGroup: string | undefined;
  *   reason: string | undefined;
+ *   tags: string[];
  *   spaces: string[];
  * }} Alert
  */
@@ -146,7 +147,7 @@ const h = Site.h;
 const DB_NAME = 'sera';
 const DB_STORE = 'kibana-data';
 // change when the records change, so data saved by older versions is dropped
-const RECORD_VERSION = 2;
+const RECORD_VERSION = 3;
 // kinds of data that older versions saved
 const OLD_KINDS = ['tasks'];
 
@@ -576,6 +577,7 @@ function toAlert(source, id, index) {
     instanceId: field('instance.id'),
     actionGroup: field('action_group'),
     reason: field('reason'),
+    tags: toArray(Site.get(source, 'kibana.alert.rule.tags')).map(String),
     spaces: Array.isArray(spaces) ? spaces : spaces ? [spaces] : [],
   };
 }
@@ -904,6 +906,26 @@ function hashParams() {
 }
 
 /**
+ * An alert's rule tags: its own, and its rule's, when the rule is loaded.
+ * @type {(data: KibanaDataSets, alert: Alert) => string[]}
+ */
+function alertTags(data, alert) {
+  const rule = alert.ruleId === undefined ? undefined : data.rulesById.get(alert.ruleId);
+  return [...new Set([...(alert.tags ?? []), ...(rule?.tags ?? [])])];
+}
+
+/**
+ * All the rule tags in the rules and alerts.
+ * @type {(data: KibanaDataSets) => string[]}
+ */
+function allTags(data) {
+  return [...new Set([
+    ...(data.rules?.records ?? []).flatMap(function (rule) { return rule.tags; }),
+    ...(data.alerts?.records ?? []).flatMap(function (alert) { return alert.tags ?? []; }),
+  ])];
+}
+
+/**
  * A rule's name linked to the rules page, or its id if the rule isn't loaded.
  * @type {(data: KibanaDataSets, ruleId: string | undefined, name?: string) => Child}
  */
@@ -950,6 +972,8 @@ return {
   filterLink,
   hashParams,
   ruleLink,
+  alertTags,
+  allTags,
   connectorLink,
   notLoaded,
 };

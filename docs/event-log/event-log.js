@@ -46,13 +46,25 @@ const input = /** @type {HTMLElement} */ (document.getElementById('input'));
  *   connectorId: string | undefined;
  *   connectorName: string | undefined;
  *   connectorType: string | undefined;
+ *   relatedRuleId: string | undefined;
+ *   tags: string[];
  * }} LogEvent
  */
 
 /** @type {LogEvent[]} */
+let allEvents = [];
+/**
+ * The events with the selected rule tags.
+ * @type {LogEvent[]}
+ */
 let events = [];
 /** @type {ChartGroup} */
 let chartGroup = 'provider';
+/**
+ * The rules and alerts loaded on their pages, for the tags of the events' rules.
+ * @type {KibanaDataSets | undefined}
+ */
+let kibanaData;
 
 input.append(Site.inputPanel({
   storageKey: 'event-log',
@@ -60,14 +72,31 @@ input.append(Site.inputPanel({
   onData,
 }));
 Site.onSettingsChange(render);
+Site.onTagsChange(render);
+KibanaData.load().then(function (loaded) {
+  kibanaData = loaded;
+  render();
+}).catch(function (err) {
+  console.warn('unable to load the rules:', err);
+});
 
 /** @type {(text: string) => void} */
 function onData(text) {
-  events = text.trim() === '' ? [] : findDocs(Site.parseJsonValues(text)).map(toEvent);
+  allEvents = text.trim() === '' ? [] : findDocs(Site.parseJsonValues(text)).map(toEvent);
+  Site.rememberTags('event-log', allEvents.flatMap(function (event) { return event.tags; }));
   render();
-  if (text.trim() !== '' && events.length === 0) {
+  if (text.trim() !== '' && allEvents.length === 0) {
     throw new Error('no event log documents found');
   }
+}
+
+/**
+ * An event's rule tags: its own, and its rule's, when the rule is loaded.
+ * @type {(event: LogEvent) => string[]}
+ */
+function eventTags(event) {
+  const rule = event.relatedRuleId === undefined ? undefined : kibanaData?.rulesById.get(event.relatedRuleId);
+  return rule ? [...new Set([...event.tags, ...rule.tags])] : event.tags;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +181,15 @@ function toEvent(doc) {
     connectorId: isAction ? (get(doc, 'kibana.action.id') ?? savedObject('action')?.id) : undefined,
     connectorName: isAction ? get(doc, 'kibana.action.name') : undefined,
     connectorType: isAction ? (get(doc, 'kibana.action.type_id') ?? savedObject('action')?.type_id) : undefined,
+    relatedRuleId: get(doc, 'rule.id') ?? savedObject('alert')?.id,
+    tags: toArray(get(doc, 'kibana.alert.rule.tags')).map(String),
   };
+}
+
+/** @type {(value: unknown) => unknown[]} */
+function toArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 // ---------------------------------------------------------------------------
@@ -160,8 +197,20 @@ function toEvent(doc) {
 // ---------------------------------------------------------------------------
 
 function render() {
-  if (events.length === 0) {
+  if (allEvents.length === 0) {
     output.replaceChildren();
+    return;
+  }
+  const selected = Site.selectedTags();
+  events = allEvents.filter(function (event) { return Site.hasSelectedTags(eventTags(event), selected); });
+  const tagFilter = Site.tagFilter(
+    [...allEvents.flatMap(eventTags), ...(kibanaData ? KibanaData.allTags(kibanaData) : [])],
+    selected.length > 0
+      ? `showing ${formatNumber(events.length)} of ${formatNumber(allEvents.length)} documents, ` +
+        'those with the tags, or whose rules have them, when the rules are loaded'
+      : undefined);
+  if (events.length === 0) {
+    output.replaceChildren(tagFilter ?? '', h('p', { class: 'muted' }, 'None of the documents have the selected rule tags.'));
     return;
   }
 
@@ -173,6 +222,7 @@ function render() {
   const range = Site.timeRange(from, to);
 
   output.replaceChildren(
+    tagFilter ?? '',
     renderSummary(from, to, range),
     section('findings', Site.findingsList(analyze())),
     renderTimeline(from, to),
