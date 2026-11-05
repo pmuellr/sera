@@ -37,9 +37,11 @@ the rules are loaded.  The connectors page uses it too, when the rules are loade
 connectors match when a rule that uses them has all of the selected tags.
 
 The rules and connectors APIs return one space's rules and connectors, and
-don't say which space.  The home page reads the space of each response from
-its request; files named like `rules-space-<space id>.json` are read as that
-space's.  The rules API doesn't return the rules' run durations
+don't say which space.  Run the requests for every space together in Dev
+Tools Console, and paste all of the output into one of the pages; the space
+of each response is read from the line naming its request, like
+`# GET kbn:/s/<space id>/api/actions/connectors 200 OK`.  Files named like
+`rules-space-<space id>.json` are read as that space's.  The rules API doesn't return the rules' run durations
 and success ratios, which the saved objects have; the event log has them too.
 
 The pages link to Kibana Discover, using [discover-url][], for the documents
@@ -48,18 +50,19 @@ behind the analysis.  Set the Kibana URL and the event log data view in the
 local storage.  See the [discover-url examples][] for creating the
 `.kibana-event-log-ds` data view the links use by default.
 
-The [home page][] shows the Kibana Dev Tools requests for the data of all the
-pages: the Task Manager health, the spaces, and each space's rules and
-connectors, from the Kibana APIs, and searches of the event log and alerts.
-Paste them all into Dev Tools Console, run them together, and paste all of
-the output back into the home page; it splits the output into each
-request's response, works out what each one is, and stores it for its page.
-The spaces in the requests are saved in the browser's local storage, and
-loading the spaces response adds any that are missing.  Files of saved
-responses can be loaded there too.  The health report and event log are stored in
-the browser tab's session storage, so open their pages from the same tab.
+Each page shows the Kibana Dev Tools requests for its data; paste the output
+into the page.  The health report and event log are stored in the browser
+tab's session storage, so they're kept while the tab is open.
 
-[home page]: https://pmuellr.github.io/sera/
+The Task Manager health report is only complete from Kibana instances with
+the `background_tasks` node role.  On Elastic Cloud Hosted with Kibana larger
+than 8GB, and always on serverless, the health API request goes to a UI
+instance, so get the report from the "Latest Monitored Stats" messages in the
+Kibana logs instead; the Task Manager health page reads those too, as log
+lines or as log documents copied from Discover.  In Discover of the Kibana
+logs, the KQL filter `tags : "task-manager-background-node-health"` finds
+them.
+
 [Task Manager health]: https://pmuellr.github.io/sera/task-manager-health/index.html
 [event log]: https://pmuellr.github.io/sera/event-log/index.html
 [rules]: https://pmuellr.github.io/sera/rules/index.html
@@ -77,7 +80,7 @@ Everything served by GitHub Pages is in the `docs` directory:
     docs/
       index.html              home page, listing the pages
       site/
-        home.js               the home page: the Dev Tools requests, and loading their output
+        home.js               the home page: the list of pages, and notes on getting their data
         pages.js              the list of pages, used to build the menu
         site.js               the menu, settings, data input, tables, formatting
         site.css              shared styles
@@ -139,9 +142,7 @@ A page's script typically:
 
 - calls `Site.inputPanel({ storageKey, onData })` to get the paste, drop,
   and file input; `onData(text)` is called with the input, or with `''` when
-  it's cleared; the home page stores files for the page under the same
-  `storageKey` with `Site.saveInput()`, so add the page's file to `FILES` in
-  `docs/site/home.js`
+  it's cleared
 - parses the input with `Site.parseJsonValues(text)`, which handles single
   JSON values, NDJSON, and Dev Tools output
 - renders the analysis with `Site.h()`, `Site.section()`, `Site.table()`, and

@@ -19,6 +19,14 @@
     reports (for instance, one from each Kibana instance) can be provided
     together.  A "Latest Monitored Stats" Kibana log message also works.
   </p>
+  <p>
+    The health report is only complete from Kibana instances with the
+    <code>background_tasks</code> node role.  On Elastic Cloud Hosted with
+    Kibana larger than 8GB, and always on serverless, the API request goes to
+    a UI instance, so get the report from the "Latest Monitored Stats" messages
+    in the Kibana logs instead.
+  </p>
+  <p id="logs-filter"></p>
   <div id="input"></div>
   <div id="output"></div>
 </main>

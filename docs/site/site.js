@@ -131,8 +131,7 @@ function renderSettings() {
     h('summary', {}, 'settings'),
     h('div', { class: 'site-settings-panel' },
       field('kibanaUrl', 'Kibana URL', 'base URL of the Kibana used for Discover links, including any base path'),
-      field('eventLogDataView', 'event log data view', 'id of a data view for .kibana-event-log-*'),
-    ),
+      field('eventLogDataView', 'event log data view', 'id of a data view for .kibana-event-log-*'),    ),
   );
 }
 

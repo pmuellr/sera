@@ -156,9 +156,9 @@ const SPACE_FILE_PATTERN = /(?:^|[-_.])space-([a-z0-9_-]+)\.json$/i;
 
 const ALERTS_QUERY = 'GET .alerts-*/_search?size=2000&sort=@timestamp:desc';
 
-const SPACES_HELP = 'The response doesn\'t say which space it\'s from; the home page has the requests for ' +
-  'every space, and reads the space of each response from its request in the Dev Tools output.  Files named like ' +
-  '<kind>-space-<space id>.json are read as that space\'s.';
+const SPACES_HELP = 'The response doesn\'t say which space it\'s from, so run the requests for every space ' +
+  'together, and paste all of the output; the space of each response is read from its request, in the line ' +
+  'Dev Tools puts before it.  Files named like <kind>-space-<space id>.json are read as that space\'s.';
 
 /** @type {Record<DataKind, { title: string; page: string; query: string; queryHelp: string }>} */
 const KINDS = {
@@ -304,6 +304,19 @@ function spaceFromRequest(request) {
  */
 function requestInSpace(request, space) {
   return space === 'default' ? request : request.replace('kbn:/api/', `kbn:/s/${encodeURIComponent(space)}/api/`);
+}
+
+/**
+ * Split Dev Tools Console output into each request's response, with the
+ * space of Kibana API requests.  Other text is a single response.
+ * @type {(name: string, text: string) => { name: string; text: string; space?: string }[]}
+ */
+function splitConsoleOutput(name, text) {
+  return Site.splitDevToolsOutput(text).map(function (part) {
+    if (!part.request) return { name, text: part.text };
+    const partName = name === 'pasted text' ? part.request : `${name}: ${part.request}`;
+    return { name: partName, text: part.text, space: spaceFromRequest(part.request) };
+  });
 }
 
 /**
@@ -752,11 +765,12 @@ function panel(kind, onData) {
         update(clear(kind), '');
         return;
       }
-      loaded(classify(Site.parseJsonValues(text)), source);
+      loaded(classifyFiles(splitConsoleOutput(source, text)), source);
     },
     onFiles: function (files) {
       try {
-        loaded(classifyFiles(files), files.map(function (file) { return file.name; }).join(', '));
+        const parts = files.flatMap(function (file) { return splitConsoleOutput(file.name, file.text); });
+        loaded(classifyFiles(parts), files.map(function (file) { return file.name; }).join(', '));
       } catch (err) {
         message.textContent = Site.errorMessage(err);
         message.classList.add('error');

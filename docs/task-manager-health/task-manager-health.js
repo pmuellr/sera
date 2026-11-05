@@ -17,6 +17,9 @@ const PERCENTILES = ['p50', 'p90', 'p95', 'p99'];
 
 const output = /** @type {HTMLElement} */ (document.getElementById('output'));
 const input = /** @type {HTMLElement} */ (document.getElementById('input'));
+const logsFilter = /** @type {HTMLElement} */ (document.getElementById('logs-filter'));
+
+const BACKGROUND_NODE_HEALTH_TAG = 'task-manager-background-node-health';
 
 /** @type {any[]} */
 let reports = [];
@@ -28,6 +31,23 @@ input.append(Site.inputPanel({
   onData,
 }));
 Site.onSettingsChange(render);
+renderLogsFilter();
+
+function renderLogsFilter() {
+  const filter = `tags : "${BACKGROUND_NODE_HEALTH_TAG}"`;
+  const copy = h('button', {
+    onclick: function () {
+      navigator.clipboard.writeText(filter).then(function () { copy.textContent = 'copied'; });
+    },
+  }, 'copy');
+  logsFilter.replaceChildren(
+    'In Discover of the Kibana logs, this KQL filter finds the "Latest Monitored Stats" messages: ',
+    h('code', {}, filter), ' ', copy,
+    h('span', { class: 'muted' },
+      '  Each Kibana instance with the background_tasks role logs its own; copy the newest message of each ',
+      'instance, or the documents as JSON, and paste them here.'),
+  );
+}
 
 /** @type {(text: string) => void} */
 function onData(text) {
@@ -47,17 +67,26 @@ function parseInput(text) {
     // log messages, like "... Latest Monitored Stats: {...}", one per line
     const values = [];
     for (const line of text.split('\n')) {
-      const start = line.indexOf('{');
-      const end = line.lastIndexOf('}');
-      if (start === -1 || end < start) continue;
-      try {
-        values.push(JSON.parse(line.slice(start, end + 1)));
-      } catch {
-        // not JSON
-      }
+      const json = jsonInMessage(line);
+      if (json !== undefined) values.push(json);
     }
     if (values.length === 0) throw err;
     return values;
+  }
+}
+
+/**
+ * The JSON object in a log message, like "... Latest Monitored Stats: {...}".
+ * @type {(message: string) => unknown}
+ */
+function jsonInMessage(message) {
+  const start = message.indexOf('{');
+  const end = message.lastIndexOf('}');
+  if (start === -1 || end < start) return undefined;
+  try {
+    return JSON.parse(message.slice(start, end + 1));
+  } catch {
+    return undefined;
   }
 }
 
@@ -74,6 +103,11 @@ function findReports(values) {
 
   /** @type {(value: any, depth: number) => void} */
   function walk(value, depth) {
+    if (typeof value === 'string' && value.includes('Latest Monitored Stats')) {
+      const json = jsonInMessage(value);
+      if (json !== undefined) walk(json, depth + 1);
+      return;
+    }
     if (value == null || typeof value !== 'object' || depth > 6) return;
     if (isReport(value)) {
       result.push(value);
