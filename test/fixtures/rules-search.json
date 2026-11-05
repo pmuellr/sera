@@ -1,0 +1,2425 @@
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 12,
+      "relation": "eq"
+    },
+    "max_score": 0,
+    "hits": [
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000001",
+        "_source": {
+          "alert": {
+            "name": "High CPU on hosts",
+            "tags": [
+              "infra"
+            ],
+            "enabled": true,
+            "alertTypeId": ".index-threshold",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-0000000003f2",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000001",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "active",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 595
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 3,
+                "new": 1,
+                "recovered": 1,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 510
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 510
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 425,
+                  "p95": 850,
+                  "p99": 1020
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 595,
+                    "total_search_duration_ms": 340,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 3,
+                    "total_alerts_created": 1,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000065",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000002",
+        "_source": {
+          "alert": {
+            "name": "Error log spike",
+            "tags": [
+              "logs"
+            ],
+            "enabled": true,
+            "alertTypeId": ".es-query",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "5m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-0000000003fc",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              },
+              {
+                "group": "query matched",
+                "actionRef": "action_1",
+                "actionTypeId": ".email",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-0000000003fd",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000002",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "active",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 630
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 1,
+                "new": 1,
+                "recovered": 2,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 540
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 540
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 450,
+                  "p95": 900,
+                  "p99": 1080
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 630,
+                    "total_search_duration_ms": 360,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 1,
+                    "total_alerts_created": 1,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000065",
+              "name": "action_0",
+              "type": "action"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000066",
+              "name": "action_1",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000003",
+        "_source": {
+          "alert": {
+            "name": "Checkout latency",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": "apm.transaction_duration",
+            "consumer": "apm",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".email",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000406",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000003",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "error",
+              "lastExecutionDate": "2026-01-15T11:59:30.000Z",
+              "lastDuration": 665,
+              "error": {
+                "reason": "read",
+                "message": "Error: search_phase_execution_exception: no such index [apm-example]"
+              }
+            },
+            "lastRun": {
+              "outcome": "failed",
+              "outcomeOrder": 20,
+              "outcomeMsg": [
+                "Error: search_phase_execution_exception: no such index [apm-example]"
+              ],
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 0,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 570
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 570
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 475,
+                  "p95": 950,
+                  "p99": 1140
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:30.000Z",
+                  "metrics": {
+                    "duration": 665,
+                    "total_search_duration_ms": 380,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000066",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:30.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000004",
+        "_source": {
+          "alert": {
+            "name": "Disk usage warning",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": "metrics.alert.threshold",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000410",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000004",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "warning",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 700,
+              "warning": {
+                "reason": "maxAlerts",
+                "message": "Rule reported more than the maximum number of alerts in a single run."
+              }
+            },
+            "lastRun": {
+              "outcome": "warning",
+              "outcomeOrder": 10,
+              "outcomeMsg": [
+                "Rule reported more than the maximum number of alerts in a single run."
+              ],
+              "warning": "maxAlerts",
+              "alertsCount": {
+                "active": 12,
+                "new": 1,
+                "recovered": 1,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 600
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 600
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 500,
+                  "p95": 1000,
+                  "p99": 1200
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 700,
+                    "total_search_duration_ms": 400,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 12,
+                    "total_alerts_created": 1,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000065",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000005",
+        "_source": {
+          "alert": {
+            "name": "Every ten seconds",
+            "tags": [
+              "noisy"
+            ],
+            "enabled": true,
+            "alertTypeId": ".es-query",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "10s"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".webhook",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-00000000041a",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000005",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 735
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 2,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 630
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 630
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 525,
+                  "p95": 1050,
+                  "p99": 1260
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 735,
+                    "total_search_duration_ms": 420,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000067",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "security:alert:00000000-0000-4000-8000-000000000006",
+        "_source": {
+          "alert": {
+            "name": "Slow security rule",
+            "tags": [
+              "siem"
+            ],
+            "enabled": true,
+            "alertTypeId": "siem.queryRule",
+            "consumer": "siem",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000006",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 66500
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 0,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 57000
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 57000
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 47500,
+                  "p95": 95000,
+                  "p99": 114000
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 66500,
+                    "total_search_duration_ms": 38000,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [],
+          "namespace": "security",
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000007",
+        "_source": {
+          "alert": {
+            "name": "Flaky synthetic monitor",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": "xpack.synthetics.alerts.monitorStatus",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-00000000042e",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000007",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "active",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 805
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 2,
+                "new": 1,
+                "recovered": 1,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": false,
+                    "timestamp": 1768478340000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768478280000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768478220000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768478160000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768478100000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768478040000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768477980000,
+                    "duration": 690
+                  },
+                  {
+                    "success": false,
+                    "timestamp": 1768477920000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 690
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 690
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 0.6,
+                  "p50": 575,
+                  "p95": 1150,
+                  "p99": 1380
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 805,
+                    "total_search_duration_ms": 460,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 2,
+                    "total_alerts_created": 1,
+                    "gap_duration_s": 120
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000065",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000008",
+        "_source": {
+          "alert": {
+            "name": "Old disabled rule",
+            "tags": [],
+            "enabled": false,
+            "alertTypeId": ".index-threshold",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1h"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".email",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000438",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000008",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 840
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 2,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [],
+                "calculated_metrics": {},
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 840,
+                    "total_search_duration_ms": 480,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": null
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000066",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-000000000009",
+        "_source": {
+          "alert": {
+            "name": "Muted maintenance rule",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": ".es-query",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "15m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000442",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-000000000009",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": true,
+            "mutedInstanceIds": [
+              "host-a"
+            ],
+            "snoozeSchedule": [
+              {
+                "duration": 86400000,
+                "rRule": {
+                  "dtstart": "2026-01-15T11:00:00.000Z",
+                  "tzid": "UTC",
+                  "count": 1
+                },
+                "id": "snooze-1"
+              }
+            ],
+            "isSnoozedUntil": "2026-01-16T11:00:00.000Z",
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 875
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 0,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 750
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 750
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 625,
+                  "p95": 1250,
+                  "p99": 1500
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 875,
+                    "total_search_duration_ms": 500,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-000000000065",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-00000000000a",
+        "_source": {
+          "alert": {
+            "name": "Rule without actions",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": ".es-query",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "5m"
+            },
+            "actions": [],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-00000000000a",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 910
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 1,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 780
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 780
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 650,
+                  "p95": 1300,
+                  "p99": 1560
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 910,
+                    "total_search_duration_ms": 520,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-00000000000b",
+        "_source": {
+          "alert": {
+            "name": "Rule with a deleted connector",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": ".index-threshold",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "5m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "action_0",
+                "actionTypeId": ".slack",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000456",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-00000000000b",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 945
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 2,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 810
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 810
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 675,
+                  "p95": 1350,
+                  "p99": 1620
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 945,
+                    "total_search_duration_ms": 540,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [
+            {
+              "id": "00000000-0000-4000-8000-0000000000c7",
+              "name": "action_0",
+              "type": "action"
+            }
+          ],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      },
+      {
+        "_index": ".kibana_alerting_cases_9.0.0_001",
+        "_score": 0,
+        "_id": "alert:00000000-0000-4000-8000-00000000000c",
+        "_source": {
+          "alert": {
+            "name": "Server log via preconfigured connector",
+            "tags": [],
+            "enabled": true,
+            "alertTypeId": ".es-query",
+            "consumer": "alerts",
+            "legacyId": null,
+            "schedule": {
+              "interval": "1m"
+            },
+            "actions": [
+              {
+                "group": "query matched",
+                "actionRef": "preconfigured:example-server-log",
+                "actionTypeId": ".server-log",
+                "params": {
+                  "message": "The rule matched"
+                },
+                "uuid": "00000000-0000-4000-8000-000000000460",
+                "frequency": {
+                  "summary": false,
+                  "notifyWhen": "onActionGroupChange",
+                  "throttle": null
+                }
+              }
+            ],
+            "params": {
+              "size": 100,
+              "threshold": [
+                10
+              ]
+            },
+            "mapped_params": {},
+            "scheduledTaskId": "00000000-0000-4000-8000-00000000000c",
+            "createdBy": "example-user",
+            "updatedBy": "example-user",
+            "createdAt": "2025-11-16T12:00:00.000Z",
+            "updatedAt": "2026-01-05T12:00:00.000Z",
+            "apiKey": "ENCRYPTED-PLACEHOLDER",
+            "apiKeyOwner": "example-user",
+            "throttle": null,
+            "notifyWhen": null,
+            "muteAll": false,
+            "mutedInstanceIds": [],
+            "snoozeSchedule": [],
+            "isSnoozedUntil": null,
+            "executionStatus": {
+              "status": "ok",
+              "lastExecutionDate": "2026-01-15T11:59:15.000Z",
+              "lastDuration": 980
+            },
+            "lastRun": {
+              "outcome": "succeeded",
+              "outcomeOrder": 0,
+              "outcomeMsg": null,
+              "warning": null,
+              "alertsCount": {
+                "active": 0,
+                "new": 0,
+                "recovered": 0,
+                "ignored": 0
+              }
+            },
+            "monitoring": {
+              "run": {
+                "history": [
+                  {
+                    "success": true,
+                    "timestamp": 1768478340000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478280000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478220000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478160000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478100000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768478040000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477980000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477920000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477860000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477800000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477740000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477680000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477620000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477560000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477500000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477440000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477380000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477320000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477260000,
+                    "duration": 840
+                  },
+                  {
+                    "success": true,
+                    "timestamp": 1768477200000,
+                    "duration": 840
+                  }
+                ],
+                "calculated_metrics": {
+                  "success_ratio": 1,
+                  "p50": 700,
+                  "p95": 1400,
+                  "p99": 1680
+                },
+                "last_run": {
+                  "timestamp": "2026-01-15T11:59:15.000Z",
+                  "metrics": {
+                    "duration": 980,
+                    "total_search_duration_ms": 560,
+                    "total_indexing_duration_ms": 12,
+                    "total_alerts_detected": 0,
+                    "total_alerts_created": 0,
+                    "gap_duration_s": null
+                  }
+                }
+              }
+            },
+            "revision": 2,
+            "running": false,
+            "nextRun": "2026-01-15T12:00:15.000Z"
+          },
+          "type": "alert",
+          "references": [],
+          "created_at": "2025-11-16T12:00:00.000Z",
+          "updated_at": "2026-01-15T11:59:15.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "10.1.0"
+        }
+      }
+    ]
+  }
+}

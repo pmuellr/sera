@@ -1,0 +1,121 @@
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 4,
+      "relation": "eq"
+    },
+    "max_score": 0,
+    "hits": [
+      {
+        "_index": ".kibana_9.0.0_001",
+        "_score": 0,
+        "_id": "action:00000000-0000-4000-8000-000000000065",
+        "_source": {
+          "action": {
+            "actionTypeId": ".slack",
+            "name": "Team chat",
+            "isMissingSecrets": false,
+            "config": {},
+            "secrets": "ENCRYPTED-PLACEHOLDER"
+          },
+          "type": "action",
+          "references": [],
+          "namespaces": [
+            "default"
+          ],
+          "created_at": "2025-10-17T12:00:00.000Z",
+          "updated_at": "2025-12-16T12:00:00.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "8.3.0"
+        }
+      },
+      {
+        "_index": ".kibana_9.0.0_001",
+        "_score": 0,
+        "_id": "action:00000000-0000-4000-8000-000000000066",
+        "_source": {
+          "action": {
+            "actionTypeId": ".email",
+            "name": "On-call email",
+            "isMissingSecrets": false,
+            "config": {
+              "service": "other",
+              "host": "smtp.example.com",
+              "port": 587,
+              "from": "alerts@example.com"
+            },
+            "secrets": "ENCRYPTED-PLACEHOLDER"
+          },
+          "type": "action",
+          "references": [],
+          "namespaces": [
+            "default"
+          ],
+          "created_at": "2025-10-17T12:00:00.000Z",
+          "updated_at": "2025-12-16T12:00:00.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "8.3.0"
+        }
+      },
+      {
+        "_index": ".kibana_9.0.0_001",
+        "_score": 0,
+        "_id": "action:00000000-0000-4000-8000-000000000067",
+        "_source": {
+          "action": {
+            "actionTypeId": ".webhook",
+            "name": "Incident webhook",
+            "isMissingSecrets": true,
+            "config": {
+              "url": "https://hooks.example.com/incident",
+              "method": "post"
+            },
+            "secrets": "ENCRYPTED-PLACEHOLDER"
+          },
+          "type": "action",
+          "references": [],
+          "namespaces": [
+            "default"
+          ],
+          "created_at": "2025-10-17T12:00:00.000Z",
+          "updated_at": "2025-12-16T12:00:00.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "8.3.0"
+        }
+      },
+      {
+        "_index": ".kibana_9.0.0_001",
+        "_score": 0,
+        "_id": "action:00000000-0000-4000-8000-000000000068",
+        "_source": {
+          "action": {
+            "actionTypeId": ".index",
+            "name": "Unused index connector",
+            "isMissingSecrets": false,
+            "config": {
+              "index": "alert-history-example"
+            },
+            "secrets": "ENCRYPTED-PLACEHOLDER"
+          },
+          "type": "action",
+          "references": [],
+          "namespaces": [
+            "default"
+          ],
+          "created_at": "2025-10-17T12:00:00.000Z",
+          "updated_at": "2025-12-16T12:00:00.000Z",
+          "coreMigrationVersion": "8.8.0",
+          "typeMigrationVersion": "8.3.0"
+        }
+      }
+    ]
+  }
+}

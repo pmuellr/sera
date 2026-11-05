@@ -29,11 +29,27 @@ test('pages load the shared scripts and stylesheet', function () {
     assert.ok(fs.existsSync(file), `${path.relative(DOCS, file)} exists`);
 
     const html = fs.readFileSync(file, 'utf8');
-    for (const resource of ['../site/site.css', '../site/pages.js', '../site/site.js']) {
+    for (const resource of ['../site/site.css', '../site/favicon.svg', '../site/pages.js', '../site/site.js']) {
       assert.ok(html.includes(`"${resource}"`), `${page.id}/index.html references ${resource}`);
     }
+    assert.ok(html.includes(`<title>sera - ${page.title}</title>`), `${page.id}/index.html has the title "sera - ${page.title}"`);
     assert.ok(html.indexOf('../site/pages.js') < html.indexOf('../site/site.js'),
       `${page.id}/index.html loads pages.js before site.js`);
+  }
+});
+
+test('the home page has the favicon', function () {
+  assert.ok(fs.existsSync(path.join(DOCS, 'site', 'favicon.svg')));
+  assert.ok(fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8').includes('"site/favicon.svg"'));
+});
+
+test('the home page loads home.js after the scripts it uses', function () {
+  const html = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8');
+  const home = html.indexOf('"site/home.js"');
+  assert.ok(home >= 0, 'index.html loads site/home.js');
+  for (const script of ['site/pages.js', 'site/site.js', 'site/kibana-data.js']) {
+    const index = html.indexOf(`"${script}"`);
+    assert.ok(index >= 0 && index < home, `index.html loads ${script} before site/home.js`);
   }
 });
 

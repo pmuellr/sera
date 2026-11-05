@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>sera - static elasticsearch resource analysis</title>
+  <rect width="32" height="32" rx="6" fill="#1d1e24"/>
+  <rect x="6" y="18" width="4" height="8" rx="1" fill="#36a2ef"/>
+  <rect x="14" y="11" width="4" height="15" rx="1" fill="#7de2d1"/>
+  <rect x="22" y="6" width="4" height="20" rx="1" fill="#f3d371"/>
+</svg>

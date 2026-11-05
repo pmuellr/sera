@@ -1,0 +1,648 @@
+{
+  "took": 5,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 25,
+      "relation": "eq"
+    },
+    "max_score": 0,
+    "hits": [
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002711",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002711",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000001",
+          "kibana.alert.rule.name": "High CPU on hosts",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:49:00.000Z",
+          "kibana.alert.duration.us": 615000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-1",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "High CPU on hosts matched for host-1",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002712",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002712",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000001",
+          "kibana.alert.rule.name": "High CPU on hosts",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:48:00.000Z",
+          "kibana.alert.duration.us": 675000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-2",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "High CPU on hosts matched for host-2",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002713",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002713",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000001",
+          "kibana.alert.rule.name": "High CPU on hosts",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-03T12:00:00.000Z",
+          "kibana.alert.duration.us": 1036755000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-3",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "High CPU on hosts matched for host-3",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002714",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002714",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000001",
+          "kibana.alert.rule.name": "High CPU on hosts",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "recovered",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:46:00.000Z",
+          "kibana.alert.end": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.duration.us": 795000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-4",
+          "kibana.alert.action_group": "recovered",
+          "kibana.alert.reason": "High CPU on hosts matched for host-4",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002715",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002715",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000001",
+          "kibana.alert.rule.name": "High CPU on hosts",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "recovered",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:45:00.000Z",
+          "kibana.alert.end": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.duration.us": 855000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-5",
+          "kibana.alert.action_group": "recovered",
+          "kibana.alert.reason": "High CPU on hosts matched for host-5",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002716",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002716",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000002",
+          "kibana.alert.rule.name": "Error log spike",
+          "kibana.alert.rule.rule_type_id": ".es-query",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:44:00.000Z",
+          "kibana.alert.duration.us": 915000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-6",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Error log spike matched for host-6",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002717",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002717",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:43:00.000Z",
+          "kibana.alert.duration.us": 975000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-7",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-7",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002718",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002718",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:42:00.000Z",
+          "kibana.alert.duration.us": 1035000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-8",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-8",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002719",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002719",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:41:00.000Z",
+          "kibana.alert.duration.us": 1095000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-9",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-9",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271a",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271a",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:40:00.000Z",
+          "kibana.alert.duration.us": 1155000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-10",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-10",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271b",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271b",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:39:00.000Z",
+          "kibana.alert.duration.us": 1215000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-11",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-11",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271c",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271c",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:38:00.000Z",
+          "kibana.alert.duration.us": 1275000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-12",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-12",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271d",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271d",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:37:00.000Z",
+          "kibana.alert.duration.us": 1335000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-13",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-13",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271e",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271e",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:36:00.000Z",
+          "kibana.alert.duration.us": 1395000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-14",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-14",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-00000000271f",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-00000000271f",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:35:00.000Z",
+          "kibana.alert.duration.us": 1455000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-15",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-15",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002720",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002720",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:34:00.000Z",
+          "kibana.alert.duration.us": 1515000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-16",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-16",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002721",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002721",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:33:00.000Z",
+          "kibana.alert.duration.us": 1575000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-17",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-17",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002722",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002722",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000004",
+          "kibana.alert.rule.name": "Disk usage warning",
+          "kibana.alert.rule.rule_type_id": "metrics.alert.threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:32:00.000Z",
+          "kibana.alert.duration.us": 1635000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-18",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Disk usage warning matched for host-18",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002723",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002723",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000007",
+          "kibana.alert.rule.name": "Flaky synthetic monitor",
+          "kibana.alert.rule.rule_type_id": "xpack.synthetics.alerts.monitorStatus",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:31:00.000Z",
+          "kibana.alert.duration.us": 1695000000,
+          "kibana.alert.flapping": true,
+          "kibana.alert.instance.id": "host-19",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Flaky synthetic monitor matched for host-19",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002724",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002724",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000007",
+          "kibana.alert.rule.name": "Flaky synthetic monitor",
+          "kibana.alert.rule.rule_type_id": "xpack.synthetics.alerts.monitorStatus",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:30:00.000Z",
+          "kibana.alert.duration.us": 1755000000,
+          "kibana.alert.flapping": true,
+          "kibana.alert.instance.id": "host-20",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Flaky synthetic monitor matched for host-20",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002725",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002725",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000007",
+          "kibana.alert.rule.name": "Flaky synthetic monitor",
+          "kibana.alert.rule.rule_type_id": "xpack.synthetics.alerts.monitorStatus",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "recovered",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:29:00.000Z",
+          "kibana.alert.end": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.duration.us": 1815000000,
+          "kibana.alert.flapping": true,
+          "kibana.alert.instance.id": "host-21",
+          "kibana.alert.action_group": "recovered",
+          "kibana.alert.reason": "Flaky synthetic monitor matched for host-21",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002726",
+        "_source": {
+          "@timestamp": "2026-01-13T12:00:00.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002726",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000008",
+          "kibana.alert.rule.name": "Old disabled rule",
+          "kibana.alert.rule.rule_type_id": ".index-threshold",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2025-12-26T12:00:00.000Z",
+          "kibana.alert.duration.us": 1555200000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-22",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Old disabled rule matched for host-22",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002727",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002727",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-000000000009",
+          "kibana.alert.rule.name": "Muted maintenance rule",
+          "kibana.alert.rule.rule_type_id": ".es-query",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "untracked",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:27:00.000Z",
+          "kibana.alert.duration.us": 1935000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-23",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Muted maintenance rule matched for host-23",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002728",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002728",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-0000000001f4",
+          "kibana.alert.rule.name": "Deleted rule",
+          "kibana.alert.rule.rule_type_id": ".es-query",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "active",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-06T12:00:00.000Z",
+          "kibana.alert.duration.us": 777555000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-24",
+          "kibana.alert.action_group": "query matched",
+          "kibana.alert.reason": "Deleted rule matched for host-24",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      },
+      {
+        "_index": ".internal.alerts-stack.alerts-default-000001",
+        "_score": 0,
+        "_id": "00000000-0000-4000-8000-000000002729",
+        "_source": {
+          "@timestamp": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.uuid": "00000000-0000-4000-8000-000000002729",
+          "kibana.alert.rule.uuid": "00000000-0000-4000-8000-0000000001f4",
+          "kibana.alert.rule.name": "Deleted rule",
+          "kibana.alert.rule.rule_type_id": ".es-query",
+          "kibana.alert.rule.consumer": "alerts",
+          "kibana.alert.rule.category": "Example",
+          "kibana.alert.status": "recovered",
+          "kibana.alert.workflow_status": "open",
+          "kibana.alert.start": "2026-01-15T11:25:00.000Z",
+          "kibana.alert.end": "2026-01-15T11:59:15.000Z",
+          "kibana.alert.duration.us": 2055000000,
+          "kibana.alert.flapping": false,
+          "kibana.alert.instance.id": "host-25",
+          "kibana.alert.action_group": "recovered",
+          "kibana.alert.reason": "Deleted rule matched for host-25",
+          "kibana.space_ids": [
+            "default"
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+[
+  {
+    "id": "example-server-log",
+    "name": "Server log (preconfigured)",
+    "config": {},
+    "connector_type_id": ".server-log",
+    "is_preconfigured": true,
+    "is_deprecated": false,
+    "referenced_by_count": 1,
+    "is_missing_secrets": false,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "system-connector-.cases",
+    "name": "Cases",
+    "connector_type_id": ".cases",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 0,
+    "is_missing_secrets": false,
+    "is_system_action": true,
+    "is_connector_type_deprecated": false
+  }
+]

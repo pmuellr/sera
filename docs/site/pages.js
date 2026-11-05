@@ -17,4 +17,19 @@ const SITE_PAGES = [
     title: 'Event Log',
     description: 'Analyze Kibana event log documents from .kibana-event-log-*: task runs, rule and connector executions, and errors.',
   },
+  {
+    id: 'rules',
+    title: 'Rules',
+    description: 'Analyze alerting rules: schedules, run outcomes, and their connectors and alerts.',
+  },
+  {
+    id: 'connectors',
+    title: 'Connectors',
+    description: 'Analyze connectors, and the rules that use them.',
+  },
+  {
+    id: 'alerts',
+    title: 'Alerts',
+    description: 'Analyze alert documents from the .alerts-* indices, by rule and status.',
+  },
 ];

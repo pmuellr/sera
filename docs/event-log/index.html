@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>event log - sera</title>
+  <title>sera - Event Log</title>
+  <link rel="icon" href="../site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../site/site.css">
   <script src="../site/pages.js"></script>
   <script src="../site/site.js"></script>
@@ -15,7 +16,7 @@
   <p>
     Analyze Kibana event log documents, from the <code>.kibana-event-log-*</code>
     indices.  Provide a search response, like the output of
-    <code>GET .kibana-event-log-*/_search?size=10000</code> in Dev Tools, or an
+    <code>GET .kibana-event-log-*/_search?size=2000&amp;sort=@timestamp:desc</code> in Dev Tools, or an
     ES|QL response, a JSON array of documents, or NDJSON with one document per
     line.  Multiple responses can be provided together.
   </p>

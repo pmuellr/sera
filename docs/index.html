@@ -3,32 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>sera</title>
+  <title>sera - static elasticsearch resource analysis</title>
+  <meta name="description" content="sera - static elasticsearch resource analysis: web pages that analyze Elastic resources, in your browser">
+  <link rel="icon" href="site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="site/site.css">
   <script src="site/pages.js"></script>
   <script src="site/site.js"></script>
+  <script src="site/kibana-data.js"></script>
 </head>
 <body>
 <main>
   <h1>sera</h1>
+  <p class="subtitle">static elasticsearch resource analysis</p>
   <p>
     Web pages that analyze Elastic resources.  Paste JSON into a page, drop
     a file on it, or load a file.  The data stays in your browser; nothing is
     sent anywhere.
   </p>
-  <ul class="page-list" id="page-list"></ul>
+  <div id="home"></div>
   <p class="muted">
     The source is at <a href="https://github.com/pmuellr/sera">github.com/pmuellr/sera</a>.
   </p>
 </main>
-<script>
-  'use strict';
-  document.getElementById('page-list')?.append(...SITE_PAGES.map(function (page) {
-    return Site.h('li', {},
-      Site.h('a', { href: Site.pageUrl(page.id) }, page.title),
-      Site.h('div', { class: 'muted' }, page.description),
-    );
-  }));
-</script>
+<script src="site/home.js"></script>
 </body>
 </html>

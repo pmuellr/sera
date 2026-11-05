@@ -95,7 +95,7 @@ function renderHeader() {
   });
 
   const header = h('header', { class: 'site-header' },
-    h('a', { class: 'site-name', href: homeUrl(), title: 'all pages' }, 'sera'),
+    h('a', { class: 'site-name', href: homeUrl(), title: 'sera - static elasticsearch resource analysis: all pages' }, 'sera'),
     h('nav', { class: 'site-nav' }, links),
     renderSettings(),
   );
@@ -164,21 +164,23 @@ function onSettingsChange(fn) {
 
 /**
  * @typedef {{
- *   storageKey: string;
+ *   storageKey?: string;
  *   placeholder?: string;
  *   onData: (text: string, source: string) => void;
+ *   onFiles?: (files: { name: string; text: string }[]) => void;
  * }} InputPanelOptions
  */
 
 /**
  * Create the data input panel.  Files dropped anywhere on the page are read.
- * The last input is saved in sessionStorage, and re-analyzed when the page
- * is reloaded or revisited from the menu.  Errors thrown by onData are shown
- * in the panel.
+ * With a storageKey, the last input is saved in sessionStorage, and
+ * re-analyzed when the page is reloaded or revisited from the menu.  Errors
+ * thrown by onData are shown in the panel.  With onFiles, loaded and dropped
+ * files are passed to it separately, instead of to onData together.
  * @type {(options: InputPanelOptions) => HTMLElement}
  */
-function inputPanel({ storageKey, placeholder, onData }) {
-  const key = INPUT_KEY_PREFIX + storageKey;
+function inputPanel({ storageKey, placeholder, onData, onFiles }) {
+  const key = storageKey && INPUT_KEY_PREFIX + storageKey;
 
   const textarea = h('textarea', {
     placeholder: placeholder || 'paste JSON here, drop a file on the page, or load a file',
@@ -236,6 +238,11 @@ function inputPanel({ storageKey, placeholder, onData }) {
     const list = Array.from(files);
     try {
       const texts = await Promise.all(list.map(function (file) { return file.text(); }));
+      if (onFiles) {
+        onFiles(list.map(function (file, index) { return { name: file.name, text: texts[index] }; }));
+        showStatus(`read ${list.map(function (file) { return file.name; }).join(', ')}`, false);
+        return;
+      }
       analyze(texts.join('\n'), list.map(function (file) { return file.name; }).join(', '));
     } catch (err) {
       showStatus(`error reading file: ${errorMessage(err)}`, true);
@@ -256,11 +263,7 @@ function inputPanel({ storageKey, placeholder, onData }) {
       textarea.placeholder = `${source}: ${formatNumber(text.length)} characters, too large to show here`;
     }
 
-    try {
-      sessionStorage.setItem(key, JSON.stringify({ text, source }));
-    } catch {
-      sessionStorage.removeItem(key);
-    }
+    if (storageKey) saveInput(storageKey, text, source);
 
     try {
       onData(text, source);
@@ -272,6 +275,7 @@ function inputPanel({ storageKey, placeholder, onData }) {
   }
 
   function restore() {
+    if (!key) return;
     try {
       const saved = JSON.parse(sessionStorage.getItem(key) || 'null');
       if (saved) analyze(saved.text, saved.source);
@@ -283,7 +287,7 @@ function inputPanel({ storageKey, placeholder, onData }) {
   function clear() {
     textarea.value = '';
     textarea.placeholder = placeholder || '';
-    sessionStorage.removeItem(key);
+    if (key) sessionStorage.removeItem(key);
     showStatus('', false);
     onData('', '');
   }
@@ -292,6 +296,23 @@ function inputPanel({ storageKey, placeholder, onData }) {
   function showStatus(message, isError) {
     status.textContent = message;
     status.classList.toggle('error', isError);
+  }
+}
+
+/**
+ * Save the input for the page whose input panel has `storageKey`, in
+ * sessionStorage, so it's analyzed when that page is opened in this tab.
+ * Returns false if it's too large to save.
+ * @type {(storageKey: string, text: string, source: string) => boolean}
+ */
+function saveInput(storageKey, text, source) {
+  const key = INPUT_KEY_PREFIX + storageKey;
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ text, source }));
+    return true;
+  } catch {
+    sessionStorage.removeItem(key);
+    return false;
   }
 }
 
@@ -331,6 +352,30 @@ function parseJsonValues(text) {
     index = end;
   }
   return values;
+}
+
+/**
+ * Split the output of running several requests at once in Kibana Dev Tools
+ * Console into each request's response.  Console puts a line like
+ * `# GET kbn:/api/actions/connectors 200 OK` before each one.  Text without
+ * those lines is returned as a single response, without a request.
+ * @type {(text: string) => { request?: string; text: string }[]}
+ */
+function splitDevToolsOutput(text) {
+  const pattern = /^#\s*(GET|POST|PUT|DELETE|HEAD|PATCH)\s+(\S+).*$/gm;
+  const matches = [...text.matchAll(pattern)];
+  if (matches.length === 0) return [{ text }];
+
+  /** @type {{ request?: string; text: string }[]} */
+  const parts = [];
+  const before = text.slice(0, matches[0].index);
+  if (before.trim() !== '') parts.push({ text: before });
+  matches.forEach(function (match, i) {
+    const start = /** @type {number} */ (match.index) + match[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    parts.push({ request: `${match[1]} ${match[2]}`, text: text.slice(start, end) });
+  });
+  return parts;
 }
 
 /** @type {(text: string, index: number) => number} */
@@ -442,6 +487,30 @@ function section(title, ...children) {
   return h('section', {}, h('h2', {}, title), children);
 }
 
+/** @type {(label: string, value: Child) => HTMLElement} */
+function card(label, value) {
+  return h('div', { class: 'card' },
+    h('div', { class: 'card-label' }, label),
+    h('div', { class: 'card-value' }, value),
+  );
+}
+
+/**
+ * Items separated by commas, with at most `max` of them shown.
+ * @type {(items: Child[], max?: number) => Child[]}
+ */
+function listOf(items, max = 10) {
+  const shown = items.slice(0, max);
+  /** @type {Child[]} */
+  const result = [];
+  shown.forEach(function (item, index) {
+    if (index > 0) result.push(', ');
+    result.push(item);
+  });
+  if (items.length > shown.length) result.push(`, and ${items.length - shown.length} more`);
+  return result;
+}
+
 /** @type {(status: unknown) => HTMLElement} */
 function statusBadge(status) {
   const text = status == null ? 'unknown' : String(status);
@@ -451,7 +520,7 @@ function statusBadge(status) {
 /** @type {(status: string) => 'ok' | 'warn' | 'error' | 'unknown'} */
 function statusLevel(status) {
   const lower = status.toLowerCase();
-  if (lower === 'ok' || lower === 'success') return 'ok';
+  if (lower === 'ok' || lower === 'success' || lower === 'succeeded') return 'ok';
   if (lower.startsWith('warn')) return 'warn';
   if (lower === 'error' || lower === 'failure' || lower === 'failed') return 'error';
   return 'unknown';
@@ -502,19 +571,33 @@ function keyValueTable(object) {
 // ---------------------------------------------------------------------------
 
 /**
+ * @template T
+ * @typedef {{
+ *   sortBy?: number;
+ *   descending?: boolean;
+ *   filter?: boolean;
+ *   filterText?: string;
+ *   search?: (row: T) => string;
+ *   limit?: number;
+ * }} TableOptions
+ */
+
+/**
  * A table whose columns can be sorted by clicking their headers.  `sortBy`
  * is the index of the column initially sorted.  With `filter`, a text box
- * filters the rows.
+ * filters the rows, starting with `filterText`; rows match if a column's
+ * value, or the text from `search`, contains the filter text.  With `limit`,
+ * only that many rows are shown.
  * @template T
  * @param {Column<T>[]} columns
  * @param {T[]} rows
- * @param {{ sortBy?: number; descending?: boolean; filter?: boolean }} [options]
+ * @param {TableOptions<T>} [options]
  * @returns {HTMLElement}
  */
 function table(columns, rows, options = {}) {
   let sortBy = options.sortBy ?? -1;
   let descending = options.descending ?? false;
-  let filterText = '';
+  let filterText = (options.filterText || '').toLowerCase();
 
   const tbody = h('tbody');
   const count = h('span', { class: 'muted' });
@@ -533,6 +616,7 @@ function table(columns, rows, options = {}) {
   const filterInput = options.filter && h('input', {
     type: 'search',
     placeholder: 'filter rows',
+    value: options.filterText,
     oninput: function () {
       filterText = filterInput ? filterInput.value.toLowerCase() : '';
       renderRows();
@@ -542,7 +626,7 @@ function table(columns, rows, options = {}) {
   renderRows();
 
   return h('div', { class: 'table-wrapper' },
-    filterInput && h('div', { class: 'table-filter' }, filterInput, ' ', count),
+    (filterInput || options.limit !== undefined) && h('div', { class: 'table-filter' }, filterInput, ' ', count),
     h('div', { class: 'table-scroll' },
       h('table', { class: 'data' }, h('thead', {}, h('tr', {}, headers)), tbody),
     ),
@@ -552,6 +636,7 @@ function table(columns, rows, options = {}) {
     let shown = rows;
     if (filterText) {
       shown = rows.filter(function (row) {
+        if (options.search?.(row).toLowerCase().includes(filterText)) return true;
         return columns.some(function (column) {
           return String(column.value(row) ?? '').toLowerCase().includes(filterText);
         });
@@ -569,9 +654,11 @@ function table(columns, rows, options = {}) {
       header.classList.toggle('sorted-asc', index === sortBy && !descending);
       header.classList.toggle('sorted-desc', index === sortBy && descending);
     });
-    count.textContent = `${shown.length} of ${rows.length} rows`;
+    const limited = options.limit !== undefined && shown.length > options.limit ? shown.slice(0, options.limit) : shown;
+    count.textContent = `${shown.length} of ${rows.length} rows` +
+      (limited.length < shown.length ? `, showing the first ${limited.length}` : '');
 
-    tbody.replaceChildren(...shown.map(function (row) {
+    tbody.replaceChildren(...limited.map(function (row) {
       return h('tr', {}, columns.map(function (column) {
         const content = column.render ? column.render(row) : formatValue(column.value(row));
         const className = [column.numeric ? 'numeric' : '', column.cellClass?.(row) || ''].join(' ').trim();
@@ -637,6 +724,17 @@ function toNumber(value) {
   return undefined;
 }
 
+/**
+ * The number of times each value occurs, most frequent first.
+ * @type {(values: string[]) => [string, number][]}
+ */
+function countBy(values) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return [...counts].sort(function (a, b) { return b[1] - a[1]; });
+}
+
 // ---------------------------------------------------------------------------
 // formatting
 // ---------------------------------------------------------------------------
@@ -662,6 +760,14 @@ function formatMillis(ms) {
   if (abs < 60 * 60 * 1000) return `${formatNumber(ms / 60 / 1000, 1)} m`;
   if (abs < 24 * 60 * 60 * 1000) return `${formatNumber(ms / 60 / 60 / 1000, 1)} h`;
   return `${formatNumber(ms / 24 / 60 / 60 / 1000, 1)} d`;
+}
+
+/** @type {(bytes: unknown) => string} */
+function formatBytes(bytes) {
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 1)} KB`;
+  return `${formatNumber(bytes / 1024 / 1024, 1)} MB`;
 }
 
 /** @type {(value: unknown) => string} */
@@ -754,11 +860,15 @@ return {
   setSettings,
   onSettingsChange,
   inputPanel,
+  saveInput,
   parseJsonValues,
+  splitDevToolsOutput,
   get,
   h,
   append,
   section,
+  card,
+  listOf,
   statusBadge,
   statusLevel,
   findingsList,
@@ -767,9 +877,11 @@ return {
   stats,
   toNumber,
   toDate,
+  countBy,
   formatNumber,
   formatPercent,
   formatMillis,
+  formatBytes,
   formatDate,
   formatValue,
   errorMessage,

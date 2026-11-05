@@ -1,0 +1,730 @@
+{
+  "page": 1,
+  "per_page": 10000,
+  "total": 11,
+  "data": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "enabled": true,
+      "name": "High CPU on hosts",
+      "tags": [
+        "infra"
+      ],
+      "rule_type_id": ".index-threshold",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000065",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-0000000003f2"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000001",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "active",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 595
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 3,
+          "new": 1,
+          "recovered": 1,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "enabled": true,
+      "name": "Error log spike",
+      "tags": [
+        "logs"
+      ],
+      "rule_type_id": ".es-query",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "5m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000065",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-0000000003fc"
+        },
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000066",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".email",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-0000000003fd"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000002",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "active",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 630
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 1,
+          "new": 1,
+          "recovered": 2,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "enabled": true,
+      "name": "Checkout latency",
+      "tags": [],
+      "rule_type_id": "apm.transaction_duration",
+      "consumer": "apm",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000066",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".email",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000406"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000003",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "error",
+        "error": {
+          "reason": "read",
+          "message": "Error: search_phase_execution_exception: no such index [apm-example]"
+        },
+        "last_execution_date": "2026-01-15T11:59:30.000Z",
+        "last_duration": 665
+      },
+      "last_run": {
+        "outcome": "failed",
+        "outcome_order": 20,
+        "warning": null,
+        "outcome_msg": [
+          "Error: search_phase_execution_exception: no such index [apm-example]"
+        ],
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 0,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "enabled": true,
+      "name": "Disk usage warning",
+      "tags": [],
+      "rule_type_id": "metrics.alert.threshold",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000065",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000410"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000004",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "warning",
+        "warning": {
+          "reason": "maxAlerts",
+          "message": "Rule reported more than the maximum number of alerts in a single run."
+        },
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 700
+      },
+      "last_run": {
+        "outcome": "warning",
+        "outcome_order": 10,
+        "warning": "maxAlerts",
+        "outcome_msg": [
+          "Rule reported more than the maximum number of alerts in a single run."
+        ],
+        "alerts_count": {
+          "active": 12,
+          "new": 1,
+          "recovered": 1,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "enabled": true,
+      "name": "Every ten seconds",
+      "tags": [
+        "noisy"
+      ],
+      "rule_type_id": ".es-query",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "10s"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000067",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".webhook",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-00000000041a"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000005",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 735
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 2,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "enabled": true,
+      "name": "Flaky synthetic monitor",
+      "tags": [],
+      "rule_type_id": "xpack.synthetics.alerts.monitorStatus",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000065",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-00000000042e"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000007",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "active",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 805
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 2,
+          "new": 1,
+          "recovered": 1,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "enabled": false,
+      "name": "Old disabled rule",
+      "tags": [],
+      "rule_type_id": ".index-threshold",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "1h"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000066",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".email",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000438"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000008",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 840
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 2,
+          "ignored": 0
+        }
+      },
+      "next_run": null,
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "enabled": true,
+      "name": "Muted maintenance rule",
+      "tags": [],
+      "rule_type_id": ".es-query",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "15m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-000000000065",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000442"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000009",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": true,
+      "notify_when": null,
+      "muted_alert_ids": [
+        "host-a"
+      ],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 875
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 0,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000a",
+      "enabled": true,
+      "name": "Rule without actions",
+      "tags": [],
+      "rule_type_id": ".es-query",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "5m"
+      },
+      "actions": [],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-00000000000a",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 910
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 1,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000b",
+      "enabled": true,
+      "name": "Rule with a deleted connector",
+      "tags": [],
+      "rule_type_id": ".index-threshold",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "5m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "00000000-0000-4000-8000-0000000000c7",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".slack",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000456"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-00000000000b",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 945
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 2,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000c",
+      "enabled": true,
+      "name": "Server log via preconfigured connector",
+      "tags": [],
+      "rule_type_id": ".es-query",
+      "consumer": "alerts",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [
+        {
+          "group": "query matched",
+          "id": "example-server-log",
+          "params": {
+            "message": "The rule matched"
+          },
+          "connector_type_id": ".server-log",
+          "frequency": {
+            "summary": false,
+            "notify_when": "onActionGroupChange",
+            "throttle": null
+          },
+          "uuid": "00000000-0000-4000-8000-000000000460"
+        }
+      ],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-00000000000c",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 980
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 0,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    }
+  ]
+}

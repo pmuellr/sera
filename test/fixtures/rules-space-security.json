@@ -1,0 +1,58 @@
+{
+  "page": 1,
+  "per_page": 10000,
+  "total": 1,
+  "data": [
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "enabled": true,
+      "name": "Slow security rule",
+      "tags": [
+        "siem"
+      ],
+      "rule_type_id": "siem.queryRule",
+      "consumer": "siem",
+      "schedule": {
+        "interval": "1m"
+      },
+      "actions": [],
+      "params": {
+        "size": 100,
+        "threshold": [
+          10
+        ]
+      },
+      "scheduled_task_id": "00000000-0000-4000-8000-000000000006",
+      "created_by": "example-user",
+      "updated_by": "example-user",
+      "created_at": "2025-11-16T12:00:00.000Z",
+      "updated_at": "2026-01-05T12:00:00.000Z",
+      "api_key_owner": "example-user",
+      "api_key_created_by_user": false,
+      "throttle": null,
+      "mute_all": false,
+      "notify_when": null,
+      "muted_alert_ids": [],
+      "execution_status": {
+        "status": "ok",
+        "last_execution_date": "2026-01-15T11:59:15.000Z",
+        "last_duration": 66500
+      },
+      "last_run": {
+        "outcome": "succeeded",
+        "outcome_order": 0,
+        "warning": null,
+        "outcome_msg": null,
+        "alerts_count": {
+          "active": 0,
+          "new": 0,
+          "recovered": 0,
+          "ignored": 0
+        }
+      },
+      "next_run": "2026-01-15T12:00:15.000Z",
+      "revision": 2,
+      "running": false
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sera - Rules</title>
+  <link rel="icon" href="../site/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../site/site.css">
+  <script src="../site/pages.js"></script>
+  <script src="../site/site.js"></script>
+  <script src="../site/kibana-data.js"></script>
+  <script src="../vendor/discover-url.js"></script>
+</head>
+<body>
+<main>
+  <h1>Rules</h1>
+  <p>
+    Analyze Kibana alerting rules, from the rules API,
+    <code>GET kbn:/api/alerting/rules/_find?per_page=10000</code>, or a search
+    of the rule saved objects.
+    When connectors or alerts are also loaded, on this page or theirs,
+    the rules are checked against them, and linked to them.
+  </p>
+  <div id="input"></div>
+  <div id="output"></div>
+</main>
+<script src="rules.js"></script>
+</body>
+</html>

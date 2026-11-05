@@ -1,0 +1,83 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000065",
+    "name": "Team chat",
+    "config": {},
+    "connector_type_id": ".slack",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 5,
+    "is_missing_secrets": false,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000066",
+    "name": "On-call email",
+    "config": {
+      "service": "other",
+      "host": "smtp.example.com",
+      "port": 587,
+      "from": "alerts@example.com"
+    },
+    "connector_type_id": ".email",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 3,
+    "is_missing_secrets": false,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000067",
+    "name": "Incident webhook",
+    "config": {
+      "url": "https://hooks.example.com/incident",
+      "method": "post"
+    },
+    "connector_type_id": ".webhook",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 1,
+    "is_missing_secrets": true,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000068",
+    "name": "Unused index connector",
+    "config": {
+      "index": "alert-history-example"
+    },
+    "connector_type_id": ".index",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 0,
+    "is_missing_secrets": false,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "example-server-log",
+    "name": "Server log (preconfigured)",
+    "config": {},
+    "connector_type_id": ".server-log",
+    "is_preconfigured": true,
+    "is_deprecated": false,
+    "referenced_by_count": 1,
+    "is_missing_secrets": false,
+    "is_system_action": false,
+    "is_connector_type_deprecated": false
+  },
+  {
+    "id": "system-connector-.cases",
+    "name": "Cases",
+    "connector_type_id": ".cases",
+    "is_preconfigured": false,
+    "is_deprecated": false,
+    "referenced_by_count": 0,
+    "is_missing_secrets": false,
+    "is_system_action": true,
+    "is_connector_type_deprecated": false
+  }
+]
