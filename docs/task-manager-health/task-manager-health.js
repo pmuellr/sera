@@ -25,11 +25,15 @@ const BACKGROUND_NODE_HEALTH_TAG = 'task-manager-background-node-health';
 let reports = [];
 let selected = 0;
 
-input.append(Site.inputPanel({
+const dataPanel = Site.dataPanel(Site.inputPanel({
   storageKey: 'task-manager-health',
   placeholder: 'paste the Task Manager health API response here, drop a file on the page, or load a file',
   onData,
 }));
+input.append(dataPanel.element);
+let dataShown = false;
+// after the input panel restores the input saved in this tab, if there is any
+setTimeout(function () { if (!dataShown) showData('', ''); }, 0);
 Site.onSettingsChange(render);
 renderLogsFilter();
 
@@ -49,14 +53,25 @@ function renderLogsFilter() {
   );
 }
 
-/** @type {(text: string) => void} */
-function onData(text) {
+/** @type {(text: string, source: string) => void} */
+function onData(text, source) {
   reports = text.trim() === '' ? [] : findReports(parseInput(text));
   selected = 0;
   render();
+  showData(text, source);
   if (text.trim() !== '' && reports.length === 0) {
     throw new Error('no Task Manager health reports found; expected an object with a "stats" property');
   }
+}
+
+/** @type {(text: string, source: string) => void} */
+function showData(text, source) {
+  dataShown = true;
+  dataPanel.update(
+    reports.length
+      ? `${formatNumber(reports.length)} health ${reports.length === 1 ? 'report' : 'reports'} from ${source}`
+      : text.trim() ? `no health reports in ${source}` : 'nothing loaded; paste a response, drop a file on the page, or load a file',
+    reports.length > 0);
 }
 
 /** @type {(text: string) => unknown[]} */

@@ -19,7 +19,9 @@
     indices.  Provide a search response, like the output of
     <code>GET .kibana-event-log-*/_search?size=2000&amp;sort=@timestamp:desc</code> in Dev Tools, or an
     ES|QL response, a JSON array of documents, or NDJSON with one document per
-    line.  Multiple responses can be provided together.
+    line.  Multiple responses can be provided together.  The documents are
+    shared with the rules, connectors, and alerts pages, and can be loaded on
+    any of them; the rules and connectors that are loaded link to their pages.
   </p>
   <div id="input"></div>
   <div id="output"></div>

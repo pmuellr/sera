@@ -508,6 +508,32 @@ function inputPanel({ storageKey, placeholder, onData, onFiles }) {
 }
 
 /**
+ * A collapsible panel for a page's data input and what's loaded, whose
+ * summary line says what's loaded.  It starts open when nothing is loaded,
+ * and closed when something is; it opens again when the data is cleared.
+ * Call `update(text, loaded)` whenever the data changes.
+ * @type {(...children: Child[]) => { element: HTMLElement; update: (text: string, loaded: boolean) => void }}
+ */
+function dataPanel(...children) {
+  const summaryText = h('span', { class: 'data-panel-summary' });
+  const details = h('details', { class: 'data-panel' },
+    h('summary', {}, h('span', { class: 'data-panel-title' }, 'data'), summaryText),
+    h('div', { class: 'data-panel-body' }, children));
+  /** @type {boolean | undefined} */
+  let wasLoaded;
+
+  return {
+    element: details,
+    update: function (text, loaded) {
+      summaryText.textContent = text;
+      if (wasLoaded === undefined) details.open = !loaded;
+      else if (wasLoaded && !loaded) details.open = true;
+      wasLoaded = loaded;
+    },
+  };
+}
+
+/**
  * Save the input for the page whose input panel has `storageKey`, in
  * sessionStorage, so it's analyzed when that page is opened in this tab.
  * Returns false if it's too large to save.
@@ -1129,6 +1155,7 @@ return {
   hasSelectedTags,
   tagFilter,
   inputPanel,
+  dataPanel,
   saveInput,
   parseJsonValues,
   splitDevToolsOutput,

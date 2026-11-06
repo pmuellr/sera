@@ -1,9 +1,10 @@
 // @ts-check
 
-// Kibana data shared by the rules, connectors, and alerts pages.
+// Kibana data shared by the rules, connectors, alerts, and event log pages.
 //
 // Responses pasted into any of the pages are read for rules and connectors,
-// from the Kibana APIs or saved object searches, and alert documents.
+// from the Kibana APIs or saved object searches, alert documents, and event
+// log documents.
 // They're kept in IndexedDB, so each page can use the data loaded on the
 // others, for the links between rules and their connectors and alerts.  The
 // records keep only the fields the pages use; secrets and API keys are
@@ -13,7 +14,7 @@
 
 'use strict';
 
-/** @typedef {'rules' | 'connectors' | 'alerts'} DataKind */
+/** @typedef {'rules' | 'connectors' | 'alerts' | 'events'} DataKind */
 
 /**
  * A rule, from the rules API or an `alert` saved object.  Durations are in
@@ -132,6 +133,7 @@
  *   rules: DataSet<Rule> | undefined;
  *   connectors: DataSet<Connector> | undefined;
  *   alerts: DataSet<Alert> | undefined;
+ *   events: DataSet<any> | undefined;
  *   rulesById: Map<string, Rule>;
  *   connectorsById: Map<string, Connector>;
  *   alertsByRule: Map<string, Alert[]>;
@@ -155,15 +157,17 @@ const OLD_KINDS = ['tasks'];
 const SPACE_FILE_PATTERN = /(?:^|[-_.])space-([a-z0-9_-]+)\.json$/i;
 
 const ALERTS_QUERY = 'GET .alerts-*/_search?size=2000&sort=@timestamp:desc';
+const EVENTS_QUERY = 'GET .kibana-event-log-*/_search?size=2000&sort=@timestamp:desc';
 
 const SPACES_HELP = 'The response doesn\'t say which space it\'s from, so run the requests for every space ' +
   'together, and paste all of the output; the space of each response is read from its request, in the line ' +
   'Dev Tools puts before it.  Files named like <kind>-space-<space id>.json are read as that space\'s.';
 
-/** @type {Record<DataKind, { title: string; page: string; query: string; queryHelp: string }>} */
+/** @type {Record<DataKind, { title: string; one: string; page: string; query: string; queryHelp: string }>} */
 const KINDS = {
   rules: {
     title: 'rules',
+    one: 'rule',
     page: 'rules',
     query: 'GET kbn:/api/alerting/rules/_find?per_page=10000',
     queryHelp: 'The rules in the default space, from the Kibana rules API; for another space, use ' +
@@ -173,6 +177,7 @@ const KINDS = {
   },
   connectors: {
     title: 'connectors',
+    one: 'connector',
     page: 'connectors',
     query: 'GET kbn:/api/actions/connectors',
     queryHelp: 'The connectors in the default space, including preconfigured connectors, from the Kibana connectors API; ' +
@@ -181,9 +186,17 @@ const KINDS = {
   },
   alerts: {
     title: 'alerts',
+    one: 'alert',
     page: 'alerts',
     query: ALERTS_QUERY,
     queryHelp: 'The most recently updated alerts.',
+  },
+  events: {
+    title: 'event log documents',
+    one: 'event log document',
+    page: 'event-log',
+    query: EVENTS_QUERY,
+    queryHelp: 'The most recent event log documents.  ES|QL responses, JSON arrays of documents, and NDJSON work here too.',
   },
 };
 const KIND_NAMES = /** @type {DataKind[]} */ (Object.keys(KINDS));
@@ -206,16 +219,16 @@ let memoryStore = {};
  */
 
 /**
- * Find the rules, connectors, and alerts in parsed JSON values: rules
- * and connectors API responses, search and msearch responses, hits, and
- * documents.  The total of a rules API or search response is attributed to
- * the kind of its records.  `space` is the space of rules and connectors
- * from the APIs, whose responses don't say.
+ * Find the rules, connectors, alerts, and event log documents in parsed JSON
+ * values: rules and connectors API responses, search, msearch, and ES|QL
+ * responses, hits, and documents.  The total of a rules API or search
+ * response is attributed to the kind of its records.  `space` is the space of
+ * rules and connectors from the APIs, whose responses don't say.
  * @type {(values: unknown[], space?: string) => Classified}
  */
 function classify(values, space) {
   /** @type {Classified} */
-  const result = { records: { rules: [], connectors: [], alerts: [] }, totals: {} };
+  const result = { records: { rules: [], connectors: [], alerts: [], events: [] }, totals: {} };
   for (const value of values) walk(value);
   return result;
 
@@ -231,6 +244,10 @@ function classify(values, space) {
     } else if (Array.isArray(value.data) && typeof value.per_page === 'number') {
       // a rules API _find response
       walkWithTotal(value.data, value.total);
+    } else if (Array.isArray(value.columns) && Array.isArray(value.values)) {
+      walk(esqlRows(value));
+    } else if (value.rawResponse && typeof value.rawResponse === 'object') {
+      walk(value.rawResponse);
     } else if (value._source && typeof value._source === 'object') {
       add(value._source, value._id, value._index);
     } else {
@@ -266,6 +283,7 @@ function classify(values, space) {
     else if (isApiRule(source)) result.records.rules.push(toApiRule(source, space));
     else if (isApiConnector(source)) result.records.connectors.push(toApiConnector(source, space));
     else if (Site.get(source, 'kibana.alert.rule.uuid') !== undefined) result.records.alerts.push(toAlert(source, id, index));
+    else if (Site.get(source, 'event.provider') !== undefined) result.records.events.push(source);
   }
 
   function counts() {
@@ -273,8 +291,22 @@ function classify(values, space) {
       rules: result.records.rules.length,
       connectors: result.records.connectors.length,
       alerts: result.records.alerts.length,
+      events: result.records.events.length,
     };
   }
+}
+
+/**
+ * ES|QL rows, as objects with dotted keys.
+ * @type {(response: { columns: { name: string }[]; values: unknown[][] }) => Record<string, unknown>[]}
+ */
+function esqlRows(response) {
+  return response.values.map(function (row) {
+    /** @type {Record<string, unknown>} */
+    const doc = {};
+    response.columns.forEach(function (column, index) { doc[column.name] = row[index]; });
+    return doc;
+  });
 }
 
 /**
@@ -328,7 +360,7 @@ function splitConsoleOutput(name, text) {
  */
 function classifyFiles(files) {
   /** @type {Classified & { sources: Partial<Record<DataKind, string[]>> }} */
-  const result = { records: { rules: [], connectors: [], alerts: [] }, totals: {}, sources: {} };
+  const result = { records: { rules: [], connectors: [], alerts: [], events: [] }, totals: {}, sources: {} };
   for (const file of files) {
     const classified = classify(Site.parseJsonValues(file.text), file.space ?? spaceFromFileName(file.name));
     for (const kind of KIND_NAMES) {
@@ -701,6 +733,7 @@ function withIndexes(stored) {
     rules: stored.rules,
     connectors: stored.connectors,
     alerts: stored.alerts,
+    events: stored.events,
     rulesById: new Map(),
     connectorsById: new Map(),
     alertsByRule: new Map(),
@@ -736,6 +769,7 @@ function withIndexes(stored) {
   const times = [
     ...(data.rules?.records || []).flatMap(function (rule) { return [rule.lastRunAt, rule.updatedAt]; }),
     ...(data.alerts?.records || []).map(function (alert) { return alert.time; }),
+    ...(data.events?.records || []).map(function (event) { return Site.get(event, '@timestamp'); }),
   ].map(function (time) { return Site.toDate(time)?.getTime(); })
     .filter(function (time) { return time !== undefined; })
     .map(Number);
@@ -759,7 +793,7 @@ function panel(kind, onData) {
 
   const input = Site.inputPanel({
     placeholder: `paste the response for ${KINDS[kind].title} here, drop files on the page, or load files; ` +
-      'responses for rules, connectors, and alerts can be loaded on any of these pages',
+      'responses for rules, connectors, alerts, and the event log can be loaded on any of these pages',
     onData: function (text, source) {
       if (text === '') {
         update(clear(kind), '');
@@ -778,13 +812,14 @@ function panel(kind, onData) {
     },
   });
 
+  const details = Site.dataPanel(input, message, status);
   update(Promise.resolve(), '');
-  return h('div', {}, input, message, status);
+  return details.element;
 
   /** @type {(classified: Classified, source: string) => void} */
   function loaded(classified, source) {
     const summary = summarize(classified);
-    if (!summary) throw new Error('no rules, connectors, or alerts found');
+    if (!summary) throw new Error('no rules, connectors, alerts, or event log documents found');
     update(saveClassified(classified, source), `loaded ${summary} from ${source}`);
   }
 
@@ -796,6 +831,14 @@ function panel(kind, onData) {
         message.textContent = text;
         message.classList.remove('error');
         status.replaceChildren(renderStatus(data, kind, function (cleared) { update(clear(cleared), ''); }));
+        const loaded = KIND_NAMES.flatMap(function (name) {
+          const dataSet = data[name];
+          if (!dataSet) return [];
+          return [`${countText(dataSet)} ${dataSet.records.length === 1 ? KINDS[name].one : KINDS[name].title}`];
+        });
+        details.update(
+          loaded.length ? loaded.join(', ') : 'nothing loaded; paste a response, drop files on the page, or load files',
+          loaded.length > 0);
         onData(data);
       })
       .catch(function (err) {
@@ -929,13 +972,14 @@ function alertTags(data, alert) {
 }
 
 /**
- * All the rule tags in the rules and alerts.
+ * All the rule tags in the rules, alerts, and event log documents.
  * @type {(data: KibanaDataSets) => string[]}
  */
 function allTags(data) {
   return [...new Set([
     ...(data.rules?.records ?? []).flatMap(function (rule) { return rule.tags; }),
     ...(data.alerts?.records ?? []).flatMap(function (alert) { return alert.tags ?? []; }),
+    ...(data.events?.records ?? []).flatMap(function (event) { return toArray(Site.get(event, 'kibana.alert.rule.tags')).map(String); }),
   ])];
 }
 

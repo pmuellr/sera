@@ -89,6 +89,7 @@ details.section:not([open]) > summary > h2::before { content: '▸'; }
 details.section > summary:hover > h2 { color: var(--accent); }
 
 code, pre, textarea { font-family: var(--mono); font-size: 12px; }
+pre.commands { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 0.75em; overflow-x: auto; }
 
 .muted { color: var(--muted); }
 
@@ -161,6 +162,22 @@ code, pre, textarea { font-family: var(--mono); font-size: 12px; }
 .input-panel input[type=file] { display: none; }
 
 .input-buttons { display: flex; align-items: center; gap: 0.5em; margin-top: 0.4em; }
+
+details.data-panel { border: 1px solid var(--border); border-radius: 6px; margin: 1em 0; }
+details.data-panel > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 0.75em;
+  padding: 0.5em 0.75em; background: var(--panel); border-radius: 6px;
+}
+details.data-panel > summary::-webkit-details-marker { display: none; }
+details.data-panel > summary::before { content: '▸'; font-size: 1.1em; width: 0.8em; color: var(--accent); }
+details.data-panel[open] > summary::before { content: '▾'; }
+details.data-panel > summary::after { content: 'show'; margin-left: auto; color: var(--accent); font-size: 0.9em; }
+details.data-panel[open] > summary::after { content: 'hide'; }
+details.data-panel[open] > summary { border-bottom: 1px solid var(--border); border-radius: 6px 6px 0 0; }
+details.data-panel > summary:hover .data-panel-title { color: var(--accent); }
+.data-panel-title { font-weight: 600; }
+.data-panel-summary { color: var(--muted); }
+.data-panel-body { padding: 0.75em; }
 
 .input-status { color: var(--muted); }
 .input-status.error { color: var(--error); }

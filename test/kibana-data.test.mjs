@@ -49,6 +49,26 @@ test('classifies each kind of search response', function () {
   assert.deepEqual({ ...totals }, { rules: 12, connectors: 4, alerts: 25 });
 });
 
+test('reads event log documents from search and ES|QL responses, and arrays', function () {
+  const search = fixture('event-log-search.json');
+  const fromSearch = kibanaData.classify([search, fixture('alerts-search.json')]);
+  assert.equal(fromSearch.records.events.length, 601);
+  assert.equal(fromSearch.records.alerts.length, 25);
+  assert.equal(fromSearch.totals.events, 601);
+  assert.equal(fromSearch.records.events[0]['@timestamp'], search.hits.hits[0]._source['@timestamp']);
+
+  const esql = {
+    columns: [{ name: '@timestamp' }, { name: 'event.provider' }, { name: 'event.action' }],
+    values: [['2026-11-04T18:00:00.000Z', 'alerting', 'execute'], ['2026-11-04T18:01:00.000Z', 'taskManager', 'task-run']],
+  };
+  const fromEsql = kibanaData.classify([esql]).records.events;
+  assert.equal(fromEsql.length, 2);
+  assert.equal(site.get(fromEsql[1], 'event.provider'), 'taskManager');
+
+  const docs = search.hits.hits.slice(0, 3).map(function (/** @type {any} */ hit) { return hit._source; });
+  assert.equal(kibanaData.classify([docs]).records.events.length, 3);
+});
+
 test('reads msearch responses', function () {
   const { records } = kibanaData.classify([{ responses: [fixture('rules-search.json'), fixture('connectors-search.json')] }]);
   assert.equal(records.rules.length, 12);

@@ -61,34 +61,20 @@ let events = [];
 /** @type {ChartGroup} */
 let chartGroup = 'provider';
 /**
- * The rules and alerts loaded on their pages, for the tags of the events' rules.
+ * The shared data, for the event log documents, and the tags of the events'
+ * rules.
  * @type {KibanaDataSets | undefined}
  */
 let kibanaData;
 
-input.append(Site.inputPanel({
-  storageKey: 'event-log',
-  placeholder: 'paste event log documents or a search response here, drop a file on the page, or load a file',
-  onData,
+input.append(KibanaData.panel('events', function (loaded) {
+  kibanaData = loaded;
+  allEvents = (loaded.events?.records ?? []).map(toEvent);
+  Site.rememberTags('event-log', allEvents.flatMap(function (event) { return event.tags; }));
+  render();
 }));
 Site.onSettingsChange(render);
 Site.onTagsChange(render);
-KibanaData.load().then(function (loaded) {
-  kibanaData = loaded;
-  render();
-}).catch(function (err) {
-  console.warn('unable to load the rules:', err);
-});
-
-/** @type {(text: string) => void} */
-function onData(text) {
-  allEvents = text.trim() === '' ? [] : findDocs(Site.parseJsonValues(text)).map(toEvent);
-  Site.rememberTags('event-log', allEvents.flatMap(function (event) { return event.tags; }));
-  render();
-  if (text.trim() !== '' && allEvents.length === 0) {
-    throw new Error('no event log documents found');
-  }
-}
 
 /**
  * An event's rule tags: its own, and its rule's, when the rule is loaded.
@@ -102,51 +88,6 @@ function eventTags(event) {
 // ---------------------------------------------------------------------------
 // reading documents
 // ---------------------------------------------------------------------------
-
-/**
- * Find the documents in search responses, ES|QL responses, arrays, and
- * single documents.
- * @type {(values: unknown[]) => any[]}
- */
-function findDocs(values) {
-  /** @type {any[]} */
-  const docs = [];
-  for (const value of values) walk(value);
-  return docs;
-
-  /** @type {(value: any) => void} */
-  function walk(value) {
-    if (value == null || typeof value !== 'object') return;
-    if (Array.isArray(value)) {
-      for (const item of value) walk(item);
-    } else if (Array.isArray(value.hits?.hits)) {
-      walk(value.hits.hits);
-    } else if (value._source && typeof value._source === 'object') {
-      docs.push(value._source);
-    } else if (Array.isArray(value.columns) && Array.isArray(value.values)) {
-      docs.push(...esqlRows(value));
-    } else if (Array.isArray(value.responses)) {
-      walk(value.responses);
-    } else if (value.rawResponse) {
-      walk(value.rawResponse);
-    } else if ('@timestamp' in value || value.event || 'event.provider' in value) {
-      docs.push(value);
-    }
-  }
-}
-
-/**
- * ES|QL rows, as objects with dotted keys.
- * @type {(response: { columns: { name: string }[]; values: unknown[][] }) => Record<string, unknown>[]}
- */
-function esqlRows(response) {
-  return response.values.map(function (row) {
-    /** @type {Record<string, unknown>} */
-    const doc = {};
-    response.columns.forEach(function (column, index) { doc[column.name] = row[index]; });
-    return doc;
-  });
-}
 
 /** @type {(doc: any) => LogEvent} */
 function toEvent(doc) {
@@ -197,8 +138,9 @@ function toArray(value) {
 // ---------------------------------------------------------------------------
 
 function render() {
+  if (!kibanaData) return;
   if (allEvents.length === 0) {
-    output.replaceChildren();
+    output.replaceChildren(KibanaData.notLoaded('events'));
     return;
   }
   const selected = Site.selectedTags();
@@ -454,7 +396,10 @@ function renderRules(range) {
   /** @type {Column<Row>[]} */
   const columns = [
     { label: 'rule', value: function (row) { return row.name || row.id; }, render: function (row) {
-      return h('span', { title: row.id }, row.name || h('span', { class: 'mono' }, row.id));
+      const label = row.name || h('span', { class: 'mono' }, row.id);
+      return kibanaData?.rulesById.has(row.id)
+        ? KibanaData.link('rules', row.id, label)
+        : h('span', { title: row.id }, label);
     } },
     { label: 'rule type', value: function (row) { return row.type; }, render: function (row) { return h('span', { class: 'mono' }, row.type); } },
     ...outcomeColumns(),
@@ -508,7 +453,10 @@ function renderConnectors(range) {
   /** @type {Column<Row>[]} */
   const columns = [
     { label: 'connector', value: function (row) { return row.name || row.id; }, render: function (row) {
-      return h('span', { title: row.id }, row.name || h('span', { class: 'mono' }, row.id));
+      const label = row.name || h('span', { class: 'mono' }, row.id);
+      return kibanaData?.connectorsById.has(row.id)
+        ? KibanaData.link('connectors', row.id, label)
+        : h('span', { title: row.id }, label);
     } },
     { label: 'connector type', value: function (row) { return row.type; }, render: function (row) { return h('span', { class: 'mono' }, row.type); } },
     ...outcomeColumns(),
