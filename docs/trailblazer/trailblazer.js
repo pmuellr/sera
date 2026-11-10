@@ -1158,7 +1158,7 @@ const panel = Site.dataPanel(KibanaData.dataFileLoader({
     show();
   },
 }), picker.element);
-/** @type {HTMLElement} */ (document.getElementById('input')).append(panel.element);
+/** @type {HTMLElement} */ (document.getElementById('input')).append(picker.notice, panel.element);
 let shown = false;
 
 async function show() {

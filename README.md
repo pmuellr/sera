@@ -38,6 +38,14 @@ off, which starts a new one.  The data panel of each page, and the home
 page, list the sessions, with what each has and its size as JSON, to pick
 the current one or delete them, along with how much of the browser's
 storage the site is using.  The current session is shared by the tabs.
+The first time sera is opened in a browser, with no sessions, it loads the
+demo data in `docs/demo/demo.sera.json` from the same site, as a session
+named `demo.sera.json`; it isn't loaded again after that session is deleted.
+While it's the current session, the pages say it's the demo, and responses
+loaded on the pages start a new session instead of being added to it.
+Pages opened from `file:` URLs can't fetch it, so they load the same data
+from `docs/demo/demo.sera.js`; run `npm run demo` to regenerate it after
+changing `demo.sera.json`.
 
 The rules, alerts, and event log pages have a dropdown to select rule tags,
 from the rules, the alerts' `kibana.alert.rule.tags`, and the event log's.

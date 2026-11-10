@@ -12,6 +12,7 @@
   "scripts": {
     "postinstall": "npm run vendor",
     "vendor": "node scripts/vendor.js",
+    "demo": "node scripts/demo-script.js",
     "serve": "python3 -m http.server --directory docs 8080",
     "test": "node --test",
     "check": "tsc -p jsconfig.json"

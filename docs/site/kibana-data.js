@@ -147,10 +147,12 @@
 /**
  * A set of loaded data, which the pages show when it's the current session.
  * sizes are of the data as JSON, in characters, by kind, and of the Task
- * Manager health report.
+ * Manager health report.  demo is true for the demo data loaded when there
+ * were no sessions.
  * @typedef {{
  *   id: string;
  *   name: string;
+ *   demo?: boolean;
  *   description: string;
  *   createdAt: string;
  *   updatedAt: string;
@@ -169,6 +171,11 @@ const DB_VERSION = 2;
 const DB_STORE = 'kibana-data';
 const SESSIONS_STORE = 'sessions';
 const SESSION_KEY = 'sera.session';
+// the demo data, loaded when there are no sessions, the first time sera is opened
+const DEMO_FILE = 'demo/demo.sera.json';
+// the same data as a script, for pages opened from file: URLs, which can't fetch files
+const DEMO_SCRIPT = 'demo/demo.sera.js';
+const DEMO_LOADED_KEY = 'sera.demoLoaded';
 const HEALTH_KEY = 'health';
 // the session the data saved by version 1 of the database is moved to
 const FIRST_SESSION = 'before-sessions';
@@ -430,10 +437,11 @@ function dataFileResponses(dataFile, page) {
  * properties are named by their pages' ids, and the Task Manager health
  * report, which its page analyzes when it's opened in this tab.  The Kibana
  * URL it was downloaded from replaces the Kibana URL setting, for the links
- * to Discover.  Returns what was loaded, for each page.
- * @type {(dataFile: DataFile, name: string) => Promise<{ page: string; text: string }[]>}
+ * to Discover.  Returns what was loaded, for each page.  With demo, the
+ * session is marked as the demo data.
+ * @type {(dataFile: DataFile, name: string, demo?: boolean) => Promise<{ page: string; text: string }[]>}
  */
-async function loadDataFile(dataFile, name) {
+async function loadDataFile(dataFile, name, demo = false) {
   const kibanaUrl = dataFile.meta.kibanaUrl;
   if (kibanaUrl && kibanaUrl !== Site.getSettings().kibanaUrl) {
     Site.setSettings({ ...Site.getSettings(), kibanaUrl });
@@ -444,7 +452,7 @@ async function loadDataFile(dataFile, name) {
       return { name, values: [value], space };
     });
   }));
-  const session = await createSession(name, dataFileSource(dataFile));
+  const session = await createSession(name, dataFileSource(dataFile), demo);
   await saveClassified(classified, name, session);
 
   const loaded = KIND_NAMES
@@ -967,8 +975,55 @@ function dataKey(sessionId, kind) {
  * @type {() => Promise<string | undefined>}
  */
 async function openCurrentSessionId() {
-  await openDb();
+  await ready();
   return currentSessionId();
+}
+
+/** @type {Promise<void> | undefined} */
+let readyPromise;
+
+/**
+ * Open the database, and the first time sera is opened in this browser, with
+ * no sessions, load the demo data from the site, wherever it's served from.
+ * The demo isn't loaded again, even after its session is deleted.
+ * @type {() => Promise<void>}
+ */
+function ready() {
+  if (!readyPromise) readyPromise = openDb().then(loadDemo);
+  return readyPromise;
+}
+
+async function loadDemo() {
+  try {
+    if (localStorage.getItem(DEMO_LOADED_KEY)) return;
+    const sessions = await storeRequest(SESSIONS_STORE, 'readonly',
+      function (store) { return store.count(); },
+      function (map) { return map.size; });
+    if (sessions > 0) return;
+    const name = DEMO_FILE.split('/').pop() ?? DEMO_FILE;
+    const dataFile = Site.parseDataFile(await demoText());
+    if (!dataFile) throw new Error(`${name} isn't a sera data file`);
+    await loadDataFile(dataFile, name, true);
+    localStorage.setItem(DEMO_LOADED_KEY, new Date().toISOString());
+  } catch (err) {
+    console.warn('unable to load the demo data:', err);
+  }
+}
+
+/** @type {() => Promise<string>} */
+async function demoText() {
+  if (location.protocol !== 'file:') {
+    const response = await fetch(new URL(DEMO_FILE, Site.ROOT_URL));
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return response.text();
+  }
+  await new Promise(function (resolve, reject) {
+    const script = h('script', { src: new URL(DEMO_SCRIPT, Site.ROOT_URL).href });
+    script.addEventListener('load', resolve);
+    script.addEventListener('error', function () { reject(new Error(`unable to load ${DEMO_SCRIPT}`)); });
+    document.head.append(script);
+  });
+  return JSON.stringify(globalThis.seraDemoData);
 }
 
 /** @type {() => string | undefined} */
@@ -1000,6 +1055,7 @@ function newSession(id, name, description, createdAt) {
  * @type {() => Promise<Session[]>}
  */
 async function listSessions() {
+  await ready();
   /** @type {Session[]} */
   const sessions = await storeRequest(SESSIONS_STORE, 'readonly',
     function (store) { return store.getAll(); },
@@ -1009,24 +1065,27 @@ async function listSessions() {
 
 /**
  * Start a new session, which becomes the current one.
- * @type {(name: string, description?: string) => Promise<Session>}
+ * @type {(name: string, description?: string, demo?: boolean) => Promise<Session>}
  */
-async function createSession(name, description = '') {
+async function createSession(name, description = '', demo = false) {
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const session = newSession(id, name, description, new Date().toISOString());
+  if (demo) session.demo = true;
   await dbPut(SESSIONS_STORE, id, session);
   setCurrentSessionId(id);
   return session;
 }
 
 /**
- * The current session, or a new one named `name`, if there isn't one.
+ * The current session, or a new one named `name`, if there isn't one, or
+ * it's the demo, which isn't mixed with other data.
  * @type {(name: string) => Promise<Session>}
  */
 async function currentSession(name) {
   const id = await openCurrentSessionId();
+  /** @type {Session | undefined} */
   const session = id ? await dbGet(SESSIONS_STORE, id) : undefined;
-  return session ?? createSession(name);
+  return session && !session.demo ? session : createSession(name);
 }
 
 /**
@@ -1137,17 +1196,19 @@ function sessionSize(session) {
 
 /**
  * The sessions, to pick the current one, or delete them, with how much data
- * each has.  onChange is called after the current session changes, here or
- * in another tab.  Call refresh() after loading data.
- * @type {(options?: { onChange?: () => void }) => { element: HTMLElement; refresh: () => Promise<void> }}
+ * each has, and `notice`, to put where it's seen, which says when the current
+ * session is the demo.  onChange is called after the current session
+ * changes, here or in another tab.  Call refresh() after loading data.
+ * @type {(options?: { onChange?: () => void }) => { element: HTMLElement; notice: HTMLElement; refresh: () => Promise<void> }}
  */
 function sessionPicker({ onChange } = {}) {
   const element = h('div', { class: 'sessions' });
+  const notice = h('div', { class: 'demo-notice', hidden: true });
   window.addEventListener('storage', function (event) {
     if (event.key === SESSION_KEY) changed();
   });
   refresh();
-  return { element, refresh };
+  return { element, notice, refresh };
 
   function changed() {
     refresh();
@@ -1158,6 +1219,14 @@ function sessionPicker({ onChange } = {}) {
     try {
       const [sessions, estimate] = await Promise.all([listSessions(), storageEstimate()]);
       const current = currentSessionId();
+      const demo = sessions.find(function (session) { return session.id === current && session.demo; });
+      notice.hidden = !demo;
+      notice.replaceChildren(...(demo ? [
+        h('span', { class: 'status status-warn' }, 'demo'),
+        ' This is demo data, from ', h('code', {}, demo.name), ', loaded automatically since nothing else was loaded.  ',
+        'Load a sera data file, or responses on the pages, to see your own data, in a new session.  ',
+        'Pick or delete sessions in the data panel.',
+      ] : []));
       element.replaceChildren(
         h('div', { class: 'sessions-title' }, 'sessions'),
         sessions.length === 0
@@ -1190,6 +1259,7 @@ function sessionPicker({ onChange } = {}) {
     return h('tr', { class: isCurrent ? 'current' : '' },
       h('td', {},
         h('label', {}, radio, ' ', session.name),
+        session.demo ? [' ', h('span', { class: 'status status-warn', title: 'loaded automatically, when nothing else was loaded' }, 'demo')] : '',
         session.description ? h('div', { class: 'muted' }, session.description) : ''),
       h('td', {}, Site.formatDate(session.createdAt)),
       h('td', {}, sessionContents(session) || h('span', { class: 'muted' }, 'nothing')),
@@ -1310,7 +1380,7 @@ function panel(kind, onData) {
     picker.element,
     status);
   update(Promise.resolve(''));
-  return details.element;
+  return h('div', {}, picker.notice, details.element);
 
   /**
    * Load sera data files, and then the other files' responses.

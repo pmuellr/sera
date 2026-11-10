@@ -4,7 +4,7 @@
 // Write a Kibana saved objects import file, NDJSON, of demo rules over the
 // Kibana sample data sets, and the email and Slack connectors they use.
 //
-//   scripts/sera-demo-rules [file]    default demo/sample-data-rules.ndjson
+//   scripts/sera-demo-rules [file]    default docs/demo/sample-data-rules.ndjson
 //
 // There are 100 rules: index threshold and Elasticsearch query rules, over
 // the sample web logs, flights, and eCommerce data, with a mix of tags,
@@ -22,7 +22,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const DEFAULT_FILE = path.join('demo', 'sample-data-rules.ndjson');
+const DEFAULT_FILE = path.join('docs', 'demo', 'sample-data-rules.ndjson');
 // the saved objects are written as from this version, so newer Kibanas
 // migrate them, and older ones down to it import them
 const CORE_MIGRATION_VERSION = '8.8.0';

@@ -12,5 +12,5 @@
     "resolveJsonModule": true
   },
   "include": ["docs/**/*.js", "docs/**/*.d.ts", "scripts/**/*.js", "test/**/*.mjs"],
-  "exclude": ["node_modules", "docs/vendor"]
+  "exclude": ["node_modules", "docs/vendor", "docs/demo"]
 }

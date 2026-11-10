@@ -397,6 +397,21 @@ test('keeps each sera data file in its own session', async function () {
   assert.equal((await kibanaData.load()).rules?.records.length, 11);
 });
 
+test('doesn\'t add responses to the demo session', async function () {
+  const demo = site.parseDataFile(JSON.stringify({ meta: { format: 'sera-data', version: 1 }, alerts: fixture('alerts-search.json') }));
+  assert.ok(demo);
+  await kibanaData.loadDataFile(demo, 'demo.sera.json', true);
+  const demoId = kibanaData.currentSessionId();
+  const sessions = await kibanaData.listSessions();
+  assert.equal(sessions.find(function (session) { return session.id === demoId; })?.demo, true);
+
+  await kibanaData.saveClassified(kibanaData.classifyFiles([fixtureFile('rules-space-default.json')]), 'rules');
+  assert.notEqual(kibanaData.currentSessionId(), demoId);
+  const data = await kibanaData.load();
+  assert.equal(data.rules?.records.length, 11);
+  assert.equal(data.alerts, undefined);
+});
+
 test('matches the selected spaces', function () {
   assert.equal(site.inSelectedSpaces(['security'], []), true, 'nothing selected matches everything');
   assert.equal(site.inSelectedSpaces(['security'], ['default']), false);

@@ -53,6 +53,13 @@ test('the home page loads home.js after the scripts it uses', function () {
   }
 });
 
+test('the demo script has the demo data', function () {
+  const context = vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(DOCS, 'demo', 'demo.sera.js'), 'utf8'), context);
+  assert.equal(JSON.stringify(context.seraDemoData), JSON.stringify(JSON.parse(fs.readFileSync(path.join(DOCS, 'demo', 'demo.sera.json'), 'utf8'))),
+    'run npm run demo after changing demo.sera.json');
+});
+
 test('vendored resources exist', function () {
   assert.ok(fs.existsSync(path.join(DOCS, 'vendor', 'discover-url.js')), 'run npm install to copy discover-url.js');
 });

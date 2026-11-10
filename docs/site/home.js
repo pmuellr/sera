@@ -35,6 +35,7 @@ function copyButton(text) {
 function renderDataFileLoader() {
   const picker = KibanaData.sessionPicker();
   return [
+    picker.notice,
     KibanaData.dataFileLoader({
       hint: ['or drop it on this page; it has the data for every page, from ', h('code', {}, 'sera-download'), ', described below'],
       onLoaded: picker.refresh,
