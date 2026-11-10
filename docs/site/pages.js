@@ -32,4 +32,9 @@ const SITE_PAGES = [
     title: 'Alerts',
     description: 'Analyze alert documents from the .alerts-* indices, by rule and status.',
   },
+  {
+    id: 'trailblazer',
+    title: 'TrailBlazer',
+    description: 'Browse the loaded data by following the links between rules, connectors, alerts, and event log documents.',
+  },
 ];

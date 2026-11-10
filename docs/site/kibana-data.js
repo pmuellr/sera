@@ -6,7 +6,8 @@
 // from the Kibana APIs or saved object searches, alert documents, and event
 // log documents.
 // They're kept in IndexedDB, so each page can use the data loaded on the
-// others, for the links between rules and their connectors and alerts.  The
+// others, for the links between rules and their connectors and alerts.  Each
+// set of loaded data is a session, and the pages show the current one.  The
 // records keep only the fields the pages use; secrets and API keys are
 // dropped.
 //
@@ -117,6 +118,7 @@
  *   reason: string | undefined;
  *   tags: string[];
  *   spaces: string[];
+ *   doc: any;
  * }} Alert
  */
 
@@ -142,16 +144,36 @@
  * }} KibanaDataSets
  */
 
+/**
+ * A set of loaded data, which the pages show when it's the current session.
+ * sizes are of the data as JSON, in characters, by kind, and of the Task
+ * Manager health report.
+ * @typedef {{
+ *   id: string;
+ *   name: string;
+ *   description: string;
+ *   createdAt: string;
+ *   updatedAt: string;
+ *   counts: Partial<Record<DataKind, number>>;
+ *   sizes: Partial<Record<DataKind | 'health', number>>;
+ * }} Session
+ */
+
 const KibanaData = (function () {
 
 const h = Site.h;
 
 const DB_NAME = 'sera';
+// version 1 kept a single set of data, by kind
+const DB_VERSION = 2;
 const DB_STORE = 'kibana-data';
+const SESSIONS_STORE = 'sessions';
+const SESSION_KEY = 'sera.session';
+const HEALTH_KEY = 'health';
+// the session the data saved by version 1 of the database is moved to
+const FIRST_SESSION = 'before-sessions';
 // change when the records change, so data saved by older versions is dropped
-const RECORD_VERSION = 3;
-// kinds of data that older versions saved
-const OLD_KINDS = ['tasks'];
+const RECORD_VERSION = 4;
 
 // the space of API responses, which don't say, from file names like rules-space-<id>.json
 const SPACE_FILE_PATTERN = /(?:^|[-_.])space-([a-z0-9_-]+)\.json$/i;
@@ -200,9 +222,6 @@ const KINDS = {
   },
 };
 const KIND_NAMES = /** @type {DataKind[]} */ (Object.keys(KINDS));
-
-/** @type {Partial<Record<DataKind, DataSet<any>>>} */
-let memoryStore = {};
 
 // ---------------------------------------------------------------------------
 // reading API and search responses
@@ -365,7 +384,8 @@ function classifyFiles(files) {
     const values = file.values ?? Site.parseJsonValues(file.text ?? '');
     const classified = classify(values, file.space ?? spaceFromFileName(file.name));
     for (const kind of KIND_NAMES) {
-      if (classified.records[kind].length > 0) result.sources[kind] = [...(result.sources[kind] || []), file.name];
+      const sources = result.sources[kind] || [];
+      if (classified.records[kind].length > 0 && !sources.includes(file.name)) result.sources[kind] = [...sources, file.name];
       result.records[kind].push(...classified.records[kind]);
       const total = classified.totals[kind];
       if (total !== undefined) result.totals[kind] = (result.totals[kind] || 0) + total;
@@ -386,15 +406,31 @@ function classifyFiles(files) {
 // ---------------------------------------------------------------------------
 
 const HEALTH_PAGE = 'task-manager-health';
+// the pages whose data is from the Kibana APIs, which return one space's
+const SPACE_PAGES = ['rules', 'connectors'];
 
 /**
- * Save the data in a sera data file, replacing what was loaded before: the
- * rules, connectors, alerts, and event log documents, whose properties are
- * named by their pages' ids, and the Task Manager health report, which its
- * page analyzes when it's opened in this tab.  The rules and connectors are
- * the default space's.  The Kibana URL it was downloaded from replaces the
- * Kibana URL setting, for the links to Discover.  Returns what was loaded,
- * for each page.
+ * The responses in a sera data file for a page, with their spaces.  Since
+ * version 2, the rules and connectors are objects of each space's response,
+ * by space id; before, they were the default space's response.
+ * @type {(dataFile: DataFile, page: string) => { space: string; value: unknown }[]}
+ */
+function dataFileResponses(dataFile, page) {
+  const value = dataFile[page];
+  if (value === undefined) return [];
+  if (SPACE_PAGES.includes(page) && dataFile.meta.version >= 2 && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(value).map(function ([space, response]) { return { space, value: response }; });
+  }
+  return [{ space: 'default', value }];
+}
+
+/**
+ * Save the data in a sera data file in a new session, which becomes the
+ * current one: the rules, connectors, alerts, and event log documents, whose
+ * properties are named by their pages' ids, and the Task Manager health
+ * report, which its page analyzes when it's opened in this tab.  The Kibana
+ * URL it was downloaded from replaces the Kibana URL setting, for the links
+ * to Discover.  Returns what was loaded, for each page.
  * @type {(dataFile: DataFile, name: string) => Promise<{ page: string; text: string }[]>}
  */
 async function loadDataFile(dataFile, name) {
@@ -404,13 +440,12 @@ async function loadDataFile(dataFile, name) {
   }
 
   const classified = classifyFiles(KIND_NAMES.flatMap(function (kind) {
-    const value = dataFile[KINDS[kind].page];
-    return value === undefined ? [] : [{ name, values: [value], space: 'default' }];
+    return dataFileResponses(dataFile, KINDS[kind].page).map(function ({ space, value }) {
+      return { name, values: [value], space };
+    });
   }));
-  await Promise.all(KIND_NAMES
-    .filter(function (kind) { return classified.records[kind].length === 0; })
-    .map(clear));
-  await saveClassified(classified, name);
+  const session = await createSession(name, dataFileSource(dataFile));
+  await saveClassified(classified, name, session);
 
   const loaded = KIND_NAMES
     .filter(function (kind) { return classified.records[kind].length > 0; })
@@ -421,8 +456,10 @@ async function loadDataFile(dataFile, name) {
   const health = dataFile[HEALTH_PAGE];
   if (health === undefined) {
     Site.removeInput(HEALTH_PAGE);
-  } else if (Site.saveInput(HEALTH_PAGE, JSON.stringify(health, null, 2), name)) {
-    loaded.unshift({ page: HEALTH_PAGE, text: 'the health report' });
+  } else {
+    const text = JSON.stringify(health, null, 2);
+    await saveHealth(session, text, name);
+    if (Site.saveInput(HEALTH_PAGE, text, name)) loaded.unshift({ page: HEALTH_PAGE, text: 'the health report' });
   }
   return loaded;
 }
@@ -456,6 +493,82 @@ function dataFileErrors(dataFile) {
   return Object.entries(dataFile.meta.errors ?? {}).map(function ([page, error]) {
     return `the request for ${page} failed: ${error}`;
   });
+}
+
+/**
+ * The prompt to load a sera data file, which loads the data of every page.
+ * Files dropped on the page are loaded too.  After a file is loaded, its
+ * pages are listed, and onLoaded is called.
+ * @type {(options: { hint: Child[]; onLoaded?: () => void }) => HTMLElement}
+ */
+function dataFileLoader({ hint, onLoaded }) {
+  const fileInput = h('input', {
+    type: 'file',
+    accept: '.json,application/json',
+    onchange: function () {
+      const file = fileInput.files?.[0];
+      if (file) loadFile(file);
+      fileInput.value = '';
+    },
+  });
+  const status = h('div', { class: 'input-status' });
+
+  document.addEventListener('dragover', function (event) {
+    event.preventDefault();
+    document.body.classList.add('dragging');
+  });
+  document.addEventListener('dragleave', function (event) {
+    if (event.relatedTarget == null) document.body.classList.remove('dragging');
+  });
+  document.addEventListener('drop', function (event) {
+    event.preventDefault();
+    document.body.classList.remove('dragging');
+    const file = event.dataTransfer?.files[0];
+    if (file) loadFile(file);
+  });
+
+  return h('div', { class: 'data-file-loader' },
+    h('div', { class: 'data-file-loader-prompt' },
+      h('button', { onclick: function () { fileInput.click(); } }, 'load a sera data file'),
+      h('span', { class: 'muted' }, hint),
+    ),
+    fileInput,
+    status,
+  );
+
+  /** @type {(file: File) => Promise<void>} */
+  async function loadFile(file) {
+    showStatus(`reading ${file.name}`, false);
+    try {
+      const dataFile = Site.parseDataFile(await file.text());
+      if (!dataFile) {
+        throw new Error(`${file.name} isn't a sera data file; load other files on the pages for their data`);
+      }
+      const loaded = await loadDataFile(dataFile, file.name);
+      const source = dataFileSource(dataFile);
+      showStatus('', false);
+      status.append(
+        h('div', {}, [`loaded ${file.name}`, source].filter(Boolean).join(', ')),
+        loaded.length === 0 ? h('div', {}, 'it had no data') : h('ul', {}, loaded.map(function (item) {
+          const page = SITE_PAGES.find(function (p) { return p.id === item.page; });
+          return h('li', {}, h('a', { href: Site.pageUrl(item.page) }, page?.title ?? item.page), ': ', item.text);
+        })),
+        ...dataFileErrors(dataFile).map(function (error) {
+          return h('div', { class: 'error' }, error);
+        }),
+      );
+      if (onLoaded) onLoaded();
+    } catch (err) {
+      console.error(err);
+      showStatus(`error loading ${file.name}: ${Site.errorMessage(err)}`, true);
+    }
+  }
+
+  /** @type {(message: string, isError: boolean) => void} */
+  function showStatus(message, isError) {
+    status.textContent = message;
+    status.classList.toggle('error', isError);
+  }
 }
 
 /** @type {(value: unknown) => any[]} */
@@ -702,6 +815,7 @@ function toAlert(source, id, index) {
     reason: field('reason'),
     tags: toArray(Site.get(source, 'kibana.alert.rule.tags')).map(String),
     spaces: Array.isArray(spaces) ? spaces : spaces ? [spaces] : [],
+    doc: source,
   };
 }
 
@@ -734,19 +848,31 @@ function parseInterval(interval) {
 }
 
 // ---------------------------------------------------------------------------
-// storage, in IndexedDB, or memory if it's not available
+// storage, in IndexedDB, or memory if it's not available.  Each session's
+// data is saved by kind, with keys like <session id>/<kind>, and the current
+// session's id is in localStorage, shared by the tabs.
 // ---------------------------------------------------------------------------
 
 /** @type {Promise<IDBDatabase | undefined> | undefined} */
 let dbPromise;
+
+/** @type {Record<string, Map<string, any>>} */
+const memoryDb = { [DB_STORE]: new Map(), [SESSIONS_STORE]: new Map() };
 
 /** @type {() => Promise<IDBDatabase | undefined>} */
 function openDb() {
   if (!dbPromise) {
     dbPromise = new Promise(function (resolve) {
       try {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = function () { request.result.createObjectStore(DB_STORE); };
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = function (event) {
+          const db = request.result;
+          if (event.oldVersion < 1) db.createObjectStore(DB_STORE);
+          if (event.oldVersion < 2) {
+            db.createObjectStore(SESSIONS_STORE);
+            if (event.oldVersion === 1 && request.transaction) moveToFirstSession(request.transaction);
+          }
+        };
         request.onsuccess = function () { resolve(request.result); };
         request.onerror = function () {
           console.warn('IndexedDB is not available, data is kept in memory:', request.error);
@@ -761,47 +887,329 @@ function openDb() {
   return dbPromise;
 }
 
-/** @type {(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest) => Promise<any>} */
-async function withStore(mode, fn) {
+/**
+ * Move the data saved by version 1 of the database, keyed by kind, to a
+ * session, which becomes the current one.  The keys are all read before any
+ * are written, since the new keys sort among the old ones.
+ * @type {(transaction: IDBTransaction) => void}
+ */
+function moveToFirstSession(transaction) {
+  const store = transaction.objectStore(DB_STORE);
+  /** @type {{ key: IDBValidKey; value: any }[]} */
+  const old = [];
+  const cursorRequest = store.openCursor();
+  cursorRequest.onsuccess = function () {
+    const cursor = cursorRequest.result;
+    if (cursor) {
+      old.push({ key: cursor.key, value: cursor.value });
+      cursor.continue();
+      return;
+    }
+    const now = new Date().toISOString();
+    const session = newSession(FIRST_SESSION, 'data loaded before sessions', '', now);
+    /** @type {string[]} */
+    const sources = [];
+    for (const { key, value } of old) {
+      store.delete(key);
+      const kind = /** @type {DataKind} */ (String(key));
+      if (!KIND_NAMES.includes(kind) || value?.version !== RECORD_VERSION) continue;
+      store.put(value, dataKey(session.id, kind));
+      session.counts[kind] = value.records.length;
+      session.sizes[kind] = JSON.stringify(value).length;
+      if (value.loadedAt < session.createdAt) session.createdAt = value.loadedAt;
+      if (!sources.includes(value.source)) sources.push(value.source);
+    }
+    if (Object.keys(session.counts).length === 0) return;
+    session.description = `from ${sources.join(', ')}`;
+    transaction.objectStore(SESSIONS_STORE).put(session, session.id);
+    if (!currentSessionId()) setCurrentSessionId(session.id);
+  };
+}
+
+/**
+ * A request to a store, or the same operation on its map in memory, if
+ * IndexedDB isn't available.
+ * @type {(storeName: string, mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest, inMemory: (map: Map<string, any>) => any) => Promise<any>}
+ */
+async function storeRequest(storeName, mode, fn, inMemory) {
   const db = await openDb();
-  if (!db) return undefined;
+  if (!db) return inMemory(memoryDb[storeName]);
   return new Promise(function (resolve, reject) {
-    const request = fn(db.transaction(DB_STORE, mode).objectStore(DB_STORE));
+    const request = fn(db.transaction(storeName, mode).objectStore(storeName));
     request.onsuccess = function () { resolve(request.result); };
     request.onerror = function () { reject(request.error); };
   });
 }
 
-/** @type {(kind: DataKind, dataSet: DataSet<any>) => Promise<void>} */
-async function save(kind, dataSet) {
-  memoryStore[kind] = dataSet;
-  await withStore('readwrite', function (store) { return store.put({ version: RECORD_VERSION, ...dataSet }, kind); });
+/** @type {(storeName: string, key: string) => Promise<any>} */
+function dbGet(storeName, key) {
+  return storeRequest(storeName, 'readonly', function (store) { return store.get(key); }, function (map) { return map.get(key); });
 }
 
-/** @type {(kind: DataKind) => Promise<void>} */
+/** @type {(storeName: string, key: string, value: any) => Promise<void>} */
+async function dbPut(storeName, key, value) {
+  await storeRequest(storeName, 'readwrite', function (store) { return store.put(value, key); }, function (map) { map.set(key, value); });
+}
+
+/** @type {(storeName: string, key: string) => Promise<void>} */
+async function dbDelete(storeName, key) {
+  await storeRequest(storeName, 'readwrite', function (store) { return store.delete(key); }, function (map) { map.delete(key); });
+}
+
+/** @type {(sessionId: string, kind: DataKind | 'health') => string} */
+function dataKey(sessionId, kind) {
+  return `${sessionId}/${kind}`;
+}
+
+/**
+ * The current session's id, after opening the database, which can move the
+ * data saved by version 1 to a session that becomes the current one.
+ * @type {() => Promise<string | undefined>}
+ */
+async function openCurrentSessionId() {
+  await openDb();
+  return currentSessionId();
+}
+
+/** @type {() => string | undefined} */
+function currentSessionId() {
+  try {
+    return localStorage.getItem(SESSION_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** @type {(id: string | undefined) => void} */
+function setCurrentSessionId(id) {
+  try {
+    if (id) localStorage.setItem(SESSION_KEY, id);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // without localStorage, there's no current session
+  }
+}
+
+/** @type {(id: string, name: string, description: string, createdAt: string) => Session} */
+function newSession(id, name, description, createdAt) {
+  return { id, name, description, createdAt, updatedAt: createdAt, counts: {}, sizes: {} };
+}
+
+/**
+ * The sessions, newest first.
+ * @type {() => Promise<Session[]>}
+ */
+async function listSessions() {
+  /** @type {Session[]} */
+  const sessions = await storeRequest(SESSIONS_STORE, 'readonly',
+    function (store) { return store.getAll(); },
+    function (map) { return [...map.values()]; });
+  return sessions.sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+}
+
+/**
+ * Start a new session, which becomes the current one.
+ * @type {(name: string, description?: string) => Promise<Session>}
+ */
+async function createSession(name, description = '') {
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const session = newSession(id, name, description, new Date().toISOString());
+  await dbPut(SESSIONS_STORE, id, session);
+  setCurrentSessionId(id);
+  return session;
+}
+
+/**
+ * The current session, or a new one named `name`, if there isn't one.
+ * @type {(name: string) => Promise<Session>}
+ */
+async function currentSession(name) {
+  const id = await openCurrentSessionId();
+  const session = id ? await dbGet(SESSIONS_STORE, id) : undefined;
+  return session ?? createSession(name);
+}
+
+/**
+ * Make a session the current one, with its Task Manager health report, if it
+ * has one, for the health page.
+ * @type {(id: string) => Promise<void>}
+ */
+async function useSession(id) {
+  setCurrentSessionId(id);
+  const health = await dbGet(DB_STORE, dataKey(id, HEALTH_KEY));
+  if (health) Site.saveInput(HEALTH_PAGE, health.text, health.source);
+  else Site.removeInput(HEALTH_PAGE);
+}
+
+/**
+ * Delete a session and its data.  If it's the current session, there's no
+ * current session after.
+ * @type {(id: string) => Promise<void>}
+ */
+async function deleteSession(id) {
+  for (const kind of [...KIND_NAMES, HEALTH_KEY]) await dbDelete(DB_STORE, dataKey(id, /** @type {DataKind | 'health'} */ (kind)));
+  await dbDelete(SESSIONS_STORE, id);
+  if (currentSessionId() === id) {
+    setCurrentSessionId(undefined);
+    Site.removeInput(HEALTH_PAGE);
+  }
+}
+
+/** @type {(session: Session) => Promise<void>} */
+async function touch(session) {
+  session.updatedAt = new Date().toISOString();
+  await dbPut(SESSIONS_STORE, session.id, session);
+}
+
+/** @type {(session: Session, kind: DataKind, dataSet: DataSet<any>) => Promise<void>} */
+async function save(session, kind, dataSet) {
+  const value = { version: RECORD_VERSION, ...dataSet };
+  await dbPut(DB_STORE, dataKey(session.id, kind), value);
+  session.counts[kind] = dataSet.records.length;
+  session.sizes[kind] = JSON.stringify(value).length;
+  await touch(session);
+}
+
+/** @type {(session: Session, text: string, source: string) => Promise<void>} */
+async function saveHealth(session, text, source) {
+  await dbPut(DB_STORE, dataKey(session.id, HEALTH_KEY), { text, source });
+  session.sizes.health = text.length;
+  await touch(session);
+}
+
+/**
+ * Clear a kind of data from the current session.
+ * @type {(kind: DataKind) => Promise<void>}
+ */
 async function clear(kind) {
-  delete memoryStore[kind];
-  await withStore('readwrite', function (store) { return store.delete(kind); });
+  const id = await openCurrentSessionId();
+  if (!id) return;
+  await dbDelete(DB_STORE, dataKey(id, kind));
+  /** @type {Session | undefined} */
+  const session = await dbGet(SESSIONS_STORE, id);
+  if (!session) return;
+  delete session.counts[kind];
+  delete session.sizes[kind];
+  await touch(session);
 }
 
-/** @type {() => Promise<KibanaDataSets>} */
+/**
+ * The current session's data.
+ * @type {() => Promise<KibanaDataSets>}
+ */
 async function load() {
   /** @type {Partial<Record<DataKind, DataSet<any>>>} */
-  const stored = { ...memoryStore };
+  const stored = {};
+  const id = await openCurrentSessionId();
+  if (!id) return withIndexes(stored);
   for (const kind of KIND_NAMES) {
     try {
-      const value = await withStore('readonly', function (store) { return store.get(kind); });
+      const value = await dbGet(DB_STORE, dataKey(id, kind));
       if (value && value.version === RECORD_VERSION) stored[kind] = value;
       else if (value) await clear(kind);
     } catch (err) {
       console.warn(`unable to load ${kind}:`, err);
     }
   }
-  for (const kind of OLD_KINDS) {
-    await withStore('readwrite', function (store) { return store.delete(kind); }).catch(function () {});
-  }
-  memoryStore = stored;
   return withIndexes(stored);
+}
+
+/**
+ * What a session has, like `12 rules, 4 connectors, the health report`.
+ * @type {(session: Session) => string}
+ */
+function sessionContents(session) {
+  return [
+    ...KIND_NAMES
+      .filter(function (kind) { return session.counts[kind] !== undefined; })
+      .map(function (kind) {
+        const count = session.counts[kind] ?? 0;
+        return `${Site.formatNumber(count)} ${count === 1 ? KINDS[kind].one : KINDS[kind].title}`;
+      }),
+    session.sizes.health !== undefined ? 'the health report' : '',
+  ].filter(Boolean).join(', ');
+}
+
+/** @type {(session: Session) => number} */
+function sessionSize(session) {
+  return Object.values(session.sizes).reduce(function (sum, size) { return sum + (size ?? 0); }, 0);
+}
+
+/**
+ * The sessions, to pick the current one, or delete them, with how much data
+ * each has.  onChange is called after the current session changes, here or
+ * in another tab.  Call refresh() after loading data.
+ * @type {(options?: { onChange?: () => void }) => { element: HTMLElement; refresh: () => Promise<void> }}
+ */
+function sessionPicker({ onChange } = {}) {
+  const element = h('div', { class: 'sessions' });
+  window.addEventListener('storage', function (event) {
+    if (event.key === SESSION_KEY) changed();
+  });
+  refresh();
+  return { element, refresh };
+
+  function changed() {
+    refresh();
+    if (onChange) onChange();
+  }
+
+  async function refresh() {
+    try {
+      const [sessions, estimate] = await Promise.all([listSessions(), storageEstimate()]);
+      const current = currentSessionId();
+      element.replaceChildren(
+        h('div', { class: 'sessions-title' }, 'sessions'),
+        sessions.length === 0
+          ? h('p', { class: 'muted' }, 'none yet; loading data starts one')
+          : h('table', { class: 'data sessions-table' },
+            h('thead', {}, h('tr', {},
+              h('th', {}, 'session'), h('th', {}, 'created'), h('th', {}, 'data'), h('th', { class: 'numeric' }, 'size'), h('th', {}))),
+            h('tbody', {}, sessions.map(function (session) { return row(session, session.id === current); }))),
+        h('p', { class: 'muted' },
+          'Loading a sera data file starts a new session.  Sizes are of the data as JSON.',
+          estimate?.usage !== undefined && estimate.quota !== undefined
+            ? `  This site, ${location.host || 'here'}, is using ${Site.formatBytes(estimate.usage)} ` +
+              `of the ${Site.formatBytes(estimate.quota)} the browser allows it.`
+            : ''),
+      );
+    } catch (err) {
+      console.error(err);
+      element.replaceChildren(h('p', { class: 'error' }, `error listing the sessions: ${Site.errorMessage(err)}`));
+    }
+  }
+
+  /** @type {(session: Session, isCurrent: boolean) => HTMLElement} */
+  function row(session, isCurrent) {
+    const radio = /** @type {HTMLInputElement} */ (h('input', {
+      type: 'radio',
+      name: 'sera-session',
+      onchange: function () { useSession(session.id).then(changed); },
+    }));
+    radio.checked = isCurrent;
+    return h('tr', { class: isCurrent ? 'current' : '' },
+      h('td', {},
+        h('label', {}, radio, ' ', session.name),
+        session.description ? h('div', { class: 'muted' }, session.description) : ''),
+      h('td', {}, Site.formatDate(session.createdAt)),
+      h('td', {}, sessionContents(session) || h('span', { class: 'muted' }, 'nothing')),
+      h('td', { class: 'numeric' }, Site.formatBytes(sessionSize(session))),
+      h('td', {}, h('button', {
+        onclick: function () {
+          if (confirm(`Delete the session ${session.name}, and its data?`)) deleteSession(session.id).then(changed);
+        },
+      }, 'delete')),
+    );
+  }
+}
+
+/** @type {() => Promise<StorageEstimate | undefined>} */
+async function storageEstimate() {
+  try {
+    return await navigator.storage?.estimate();
+  } catch {
+    return undefined;
+  }
 }
 
 /** @type {(stored: Partial<Record<DataKind, DataSet<any>>>) => KibanaDataSets} */
@@ -890,7 +1298,17 @@ function panel(kind, onData) {
     },
   });
 
-  const details = Site.dataPanel(input, message, status);
+  const addToCurrent = /** @type {HTMLInputElement} */ (h('input', { type: 'checkbox' }));
+  addToCurrent.checked = true;
+  const picker = sessionPicker({ onChange: function () { update(Promise.resolve('')); } });
+
+  const details = Site.dataPanel(
+    input,
+    h('label', { class: 'session-option' }, addToCurrent,
+      ' add pasted and loaded responses to the current session, instead of starting a new one'),
+    message,
+    picker.element,
+    status);
   update(Promise.resolve(''));
   return details.element;
 
@@ -927,9 +1345,9 @@ function panel(kind, onData) {
     }
     if (classified && summary) {
       const source = parts.length === 1 ? parts[0].name : files.map(function (file) { return file.name; }).join(', ');
-      saving = saving.then(function () {
+      saving = saving.then(async function () {
         messages.push(`loaded ${summary} from ${source}`);
-        return saveClassified(classified, source);
+        return saveClassified(classified, source, addToCurrent.checked ? undefined : await createSession(source));
       });
     }
     update(saving.then(function () { return messages.join('; '); }));
@@ -942,6 +1360,7 @@ function panel(kind, onData) {
         return load().then(function (data) { return { data, text }; });
       })
       .then(function ({ data, text }) {
+        picker.refresh();
         message.textContent = text;
         message.classList.remove('error');
         status.replaceChildren(renderStatus(data, kind, function (cleared) {
@@ -966,22 +1385,24 @@ function panel(kind, onData) {
 }
 
 /**
- * Save each kind of data found, replacing what was loaded before.  `source`
- * describes where it came from, unless the files of each kind are known.
- * @type {(classified: Classified, source: string) => Promise<void>}
+ * Save each kind of data found in a session, replacing what it had before;
+ * by default, the current session, or a new one if there isn't one.
+ * `source` describes where it came from, unless the files of each kind are
+ * known.
+ * @type {(classified: Classified, source: string, session?: Session) => Promise<void>}
  */
-async function saveClassified(classified, source) {
+async function saveClassified(classified, source, session) {
+  const target = session ?? await currentSession(source);
   const loadedAt = new Date().toISOString();
-  await Promise.all(KIND_NAMES
-    .filter(function (name) { return classified.records[name].length > 0; })
-    .map(function (name) {
-      return save(name, {
-        records: classified.records[name],
-        total: classified.totals[name],
-        source: classified.sources?.[name]?.join(', ') ?? source,
-        loadedAt,
-      });
-    }));
+  for (const name of KIND_NAMES) {
+    if (classified.records[name].length === 0) continue;
+    await save(target, name, {
+      records: classified.records[name],
+      total: classified.totals[name],
+      source: classified.sources?.[name]?.join(', ') ?? source,
+      loadedAt,
+    });
+  }
 }
 
 /**
@@ -1100,6 +1521,37 @@ function allTags(data) {
 }
 
 /**
+ * The spaces of a rule or connector, which are joined in its space when it's
+ * from a saved object in more than one.  Preconfigured and system
+ * connectors aren't in a space.
+ * @type {(record: { space: string | undefined }) => string[]}
+ */
+function recordSpaces(record) {
+  return record.space === undefined ? [] : record.space.split(', ');
+}
+
+/**
+ * The spaces of an event log document, from kibana.space_ids.
+ * @type {(event: any) => string[]}
+ */
+function eventSpaces(event) {
+  return toArray(Site.get(event, 'kibana.space_ids')).map(String);
+}
+
+/**
+ * All the spaces of the rules, connectors, alerts, and event log documents.
+ * @type {(data: KibanaDataSets) => string[]}
+ */
+function allSpaces(data) {
+  return [...new Set([
+    ...(data.rules?.records ?? []).flatMap(recordSpaces),
+    ...(data.connectors?.records ?? []).flatMap(recordSpaces),
+    ...(data.alerts?.records ?? []).flatMap(function (alert) { return alert.spaces; }),
+    ...(data.events?.records ?? []).flatMap(eventSpaces),
+  ])];
+}
+
+/**
  * A rule's name linked to the rules page, or its id if the rule isn't loaded.
  * @type {(data: KibanaDataSets, ruleId: string | undefined, name?: string) => Child}
  */
@@ -1140,9 +1592,16 @@ return {
   dataFileNotes,
   dataFileSource,
   dataFileErrors,
+  dataFileLoader,
   summarize,
   parseInterval,
   load,
+  listSessions,
+  currentSessionId,
+  createSession,
+  useSession,
+  deleteSession,
+  sessionPicker,
   panel,
   isComplete,
   countText,
@@ -1152,6 +1611,9 @@ return {
   ruleLink,
   alertTags,
   allTags,
+  recordSpaces,
+  eventSpaces,
+  allSpaces,
   connectorLink,
   notLoaded,
 };

@@ -41,7 +41,15 @@ function render() {
   function isTagged(connectorId) {
     return !filtering || rulesOf(loaded, connectorId).some(function (rule) { return Site.hasSelectedTags(rule.tags, selected); });
   }
-  const refs = referenced(loaded).filter(function (ref) { return isTagged(ref.id); });
+  // connectors match the spaces by their own, or the rules' when they aren't loaded
+  const spaces = Site.selectedSpaces();
+  /** @type {(connectorId: string) => boolean} */
+  function inSpaces(connectorId) {
+    const connector = loaded.connectorsById.get(connectorId);
+    if (connector) return Site.inSelectedSpaces(KibanaData.recordSpaces(connector), spaces);
+    return rulesOf(loaded, connectorId).some(function (rule) { return Site.inSelectedSpaces(KibanaData.recordSpaces(rule), spaces); });
+  }
+  const refs = referenced(loaded).filter(function (ref) { return isTagged(ref.id) && inSpaces(ref.id); });
 
   if (!allConnectors) {
     // the rules alone show which connectors are used
@@ -54,7 +62,7 @@ function render() {
     return;
   }
 
-  const connectors = allConnectors.filter(function (connector) { return isTagged(connector.id); });
+  const connectors = allConnectors.filter(function (connector) { return isTagged(connector.id) && inSpaces(connector.id); });
   const unloaded = refs.filter(function (ref) { return !loaded.connectorsById.has(ref.id); });
   const list = section('connectors', renderConnectors(data, connectors, q));
   output.replaceChildren(
@@ -77,8 +85,10 @@ function renderTagFilter(data, selected, shown, total) {
     note = 'the rules aren\'t loaded, so the connectors aren\'t filtered by the rules\' tags';
   } else if (selected.length > 0) {
     note = `showing ${formatNumber(shown)} of ${formatNumber(total)} connectors, those used by rules with the tags`;
+  } else if (Site.isFiltered()) {
+    note = `showing ${formatNumber(shown)} of ${formatNumber(total)} connectors`;
   }
-  return Site.tagFilter(KibanaData.allTags(data), note);
+  return Site.tagFilter(KibanaData.allTags(data), note, KibanaData.allSpaces(data));
 }
 
 /** @type {(data: KibanaDataSets) => Referenced[]} */

@@ -7,7 +7,7 @@ Kibana Task Manager health report and Kibana event log documents.  Paste JSON
 into a page, drop a file on it, or load a file; the data stays in your
 browser.
 
-The pages are hosted with GitHub Pages at <https://pmuellr.github.io/sera/>.
+The pages are hosted with GitHub Pages at <https://pmuellr.github.io/sera/>
 
 | page                                    | analyzes
 | --------------------------------------- | ---------------------------------------------
@@ -16,6 +16,7 @@ The pages are hosted with GitHub Pages at <https://pmuellr.github.io/sera/>.
 | [rules][]                               | alerting rules, from `GET kbn:/api/alerting/rules/_find`, or a search of `.kibana*` for `type: alert`
 | [connectors][]                          | connectors, from `GET kbn:/api/actions/connectors`, or a search of `.kibana*` for `type: action`
 | [alerts][]                              | alert documents, from a search of `.alerts-*`
+| [TrailBlazer][]                         | browses all of the loaded data, by following the links between the records
 
 The rules, connectors, alerts, and event log pages share their data; only
 the Task Manager health page keeps its own.  A response pasted into any of
@@ -29,6 +30,15 @@ of data; the requests leave out API keys and secrets, and the pages drop them
 if they're there anyway.  The data stays until it's cleared on one of the
 pages.
 
+Each set of loaded data is a session, and the pages show the current one.
+Loading a sera data file starts a new session, named for the file.
+Responses pasted or loaded on the pages are added to the current session,
+unless "add pasted and loaded responses to the current session" is turned
+off, which starts a new one.  The data panel of each page, and the home
+page, list the sessions, with what each has and its size as JSON, to pick
+the current one or delete them, along with how much of the browser's
+storage the site is using.  The current session is shared by the tabs.
+
 The rules, alerts, and event log pages have a dropdown to select rule tags,
 from the rules, the alerts' `kibana.alert.rule.tags`, and the event log's.
 Selecting tags filters those pages to what has all of them; the selection is
@@ -37,6 +47,33 @@ last 10 tags selected, which are listed first until the history is cleared.
 Event log documents match with their own tags, or those of their rules, when
 the rules are loaded.  The connectors page uses it too, when the rules are loaded:
 connectors match when a rule that uses them has all of the selected tags.
+The TrailBlazer page filters its rules, alerts, and event log documents the
+same way.
+
+Next to it, a dropdown selects spaces, from the spaces of the rules,
+connectors, alerts, and event log documents; the pages show what is in any
+of the selected spaces.  The selection is shared and saved like the tags.
+Alerts and event log documents are in the spaces of their `kibana.space_ids`,
+and connectors that the rules use but that aren't loaded are in their rules'
+spaces.  Preconfigured and system connectors, and what is in every space,
+`*`, are in all of them.  Neither filter applies to the health report.
+
+The TrailBlazer page browses everything loaded, including the Task Manager
+health report.
+Selecting an item opens it in a pane to the right, replacing the panes after
+it, and the arrow keys move up and down a list, and between the panes.
+Searches are conditions on the fields of the documents and API responses,
+run over the loaded data rather than Elasticsearch: a search's fields show
+each field's values and how often they occur, and selecting a value adds it
+to the search, as does selecting one of a record's fields.  A record's
+related items are the records and searches linked to it: a rule's
+connectors, alerts, and event log documents, the rules using a connector, an
+alert's rule and the alerts and event log documents from the same rule run,
+an event log document's saved objects and task, and the rules of the
+alerting task types in the health report.  Event log and alert searches link
+to Discover.  The trail is kept in the URL, so it's restored when the page
+is reloaded.  Event log documents are identified by their position in the
+loaded data, so their panes aren't restored after other data is loaded.
 
 The rules and connectors APIs return one space's rules and connectors, and
 don't say which space.  Run the requests for every space together in Dev
@@ -59,8 +96,10 @@ storage, so it's kept while the tab is open.
 `scripts/sera-download` makes the same requests, and writes all of the
 responses to a sera data file, described below, in the current directory,
 named for the hostname of the Kibana URL, and the year, month, day, hour,
-and minute, like `localhost-26-11-09-17-38.sera.json`.  It gets the rules and connectors of the default
-space only.  It needs Node.js 18 or later, and no npm packages.  Without settings, it uses a local development
+and minute, like `localhost-26-11-09-17-38.sera.json`.  It lists the spaces
+with `GET kbn:/api/spaces/space`, and gets the rules and connectors of each
+of them; if the spaces can't be listed, it gets the default space's.  It
+needs Node.js 18 or later, and no npm packages.  Without settings, it uses a local development
 Elasticsearch and Kibana, with these environment variables:
 
 | variable      | value                                               | default
@@ -85,8 +124,9 @@ one in Kibana, open Stack Management, then API keys, and Create API key:
    ```json
    {
      "sera": {
+       "cluster": [],
        "indices": [
-         { "names": [".kibana-event-log-*", ".alerts-*"], "privileges": ["read"] }
+         { "names": [".kibana-event-log-*", ".alerts-*"], "privileges": ["read"], "allow_restricted_indices": false }
        ],
        "applications": [
          { "application": "kibana-.kibana", "privileges": ["read"], "resources": ["*"] }
@@ -98,8 +138,11 @@ one in Kibana, open Stack Management, then API keys, and Create API key:
 3. optionally, turn on "Expire after time", and set a few days
 4. create it, and copy the "Encoded" value; that's `ES_API_KEY`
 
-The key can read every Kibana feature in every space; it can't have more
-privileges than the user who creates it.  To keep the key off the command line
+The key is read-only: it has no cluster privileges, can only read the event
+log and alerts indices, and has Kibana's `read` privilege, which reads every
+Kibana feature in every space, including the spaces, rules, connectors, and
+Task Manager health that `sera-download` gets, but can't change anything.  It
+can't have more privileges than the user who creates it.  To keep the key off the command line
 and out of the shell history, copy it to the clipboard, and on macOS set it
 with `pbpaste`, then clear the clipboard:
 
@@ -109,29 +152,39 @@ with `pbpaste`, then clear the clipboard:
     pbcopy < /dev/null
     scripts/sera-download
 
-The script prints the HTTP status of each request, and the error of each one
-that failed; it exits with an error if any of them failed, and doesn't write
-the file if all of them did.  The file contains names and other details of
+The script prints the spaces, and how many of each kind of data it
+downloaded, or the error of each request that failed, including each space's;
+it exits with an error if any of them failed, and doesn't write the file if
+all of them did.  The file contains names and other details of
 the deployment, so share it with care.
 
 A sera data file is a JSON object with the response for each page, as the
 property named by the page's id, and a `meta` property describing the file:
 when the data was downloaded, from which Kibana and Elasticsearch URLs, without
 any user and password, and the errors of the requests that failed, which are
-left out:
+left out.  The rules and connectors are objects of each space's response, by
+space id, and `spaces` is the list of spaces; in version 1 files, the rules
+and connectors are the default space's response.
 
 ```json
 {
   "meta": {
     "format": "sera-data",
-    "version": 1,
+    "version": 2,
     "timestamp": "2026-11-05T22:46:00.000Z",
     "kibanaUrl": "https://kibana.example.com",
     "elasticsearchUrl": "https://elasticsearch.example.com",
-    "errors": { "connectors": "403 Unauthorized to get actions" }
+    "errors": { "connectors in space security": "403 Unauthorized to get actions" }
   },
+  "spaces": [{ "...": "the response of GET kbn:/api/spaces/space" }],
   "task-manager-health": { "...": "the response of GET kbn:/api/task_manager/_health" },
-  "rules": { "...": "the response of GET kbn:/api/alerting/rules/_find?per_page=10000" },
+  "rules": {
+    "default": { "...": "the response of GET kbn:/api/alerting/rules/_find?per_page=10000" },
+    "security": { "...": "the response of GET kbn:/s/security/api/alerting/rules/_find?per_page=10000" }
+  },
+  "connectors": {
+    "default": [{ "...": "the response of GET kbn:/api/actions/connectors" }]
+  },
   "event-log": { "...": "the response of the event log search" },
   "alerts": { "...": "the response of the alerts search" }
 }
@@ -139,9 +192,9 @@ left out:
 
 Load it with "load a sera data file" on the home page, or drop it on the
 home page, or on any of the rules, connectors, alerts, or event log pages.
-It replaces all of the data loaded before, so the kinds of data it doesn't
-have are cleared.  The Task Manager health report is analyzed when its page
-is opened in the same tab.  Its Kibana URL replaces the Kibana URL setting,
+It's loaded into a new session, which becomes the current one.  The Task
+Manager health report is analyzed when its page is opened in the same tab,
+and again when its session is picked.  Its Kibana URL replaces the Kibana URL setting,
 so the links to Discover go to the Kibana it was downloaded from; the
 setting is for the data loaded from other files.
 On the Task Manager health page, a data file loads just its health report.
@@ -160,6 +213,7 @@ them.
 [rules]: https://pmuellr.github.io/sera/rules/index.html
 [connectors]: https://pmuellr.github.io/sera/connectors/index.html
 [alerts]: https://pmuellr.github.io/sera/alerts/index.html
+[TrailBlazer]: https://pmuellr.github.io/sera/trailblazer/index.html
 [discover-url]: https://github.com/pmuellr/discover-url
 [discover-url examples]: https://github.com/pmuellr/discover-url/blob/main/EXAMPLES.md
 
@@ -190,6 +244,7 @@ Everything served by GitHub Pages is in the `docs` directory:
       rules/                  rules.js
       connectors/             connectors.js
       alerts/                 alerts.js
+      trailblazer/            trailblazer.js, trailblazer.css
 
 The pages use plain `<script src>` scripts rather than ES modules, so they
 also work when opened from `file:` URLs.  `site.js` adds a `Site` global,

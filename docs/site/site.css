@@ -170,6 +170,13 @@ pre.commands { background: var(--panel); border: 1px solid var(--border); border
 
 .input-buttons { display: flex; align-items: center; gap: 0.5em; margin-top: 0.4em; }
 
+.session-option { display: block; margin: 0.5em 0; color: var(--muted); }
+.sessions { margin: 0.75em 0; }
+.sessions-title { font-weight: 600; margin-bottom: 0.25em; }
+.sessions-table tr.current { background: var(--panel); }
+.sessions-table label { cursor: pointer; }
+.sessions > p { margin: 0.4em 0 0; }
+
 details.data-panel { border: 1px solid var(--border); border-radius: 6px; margin: 1em 0; }
 details.data-panel > summary {
   list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 0.75em;

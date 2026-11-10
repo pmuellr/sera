@@ -35,9 +35,13 @@ function render() {
     return;
   }
   const selected = Site.selectedTags();
-  const rules = allRules.filter(function (rule) { return Site.hasSelectedTags(rule.tags, selected); });
+  const spaces = Site.selectedSpaces();
+  const rules = allRules.filter(function (rule) {
+    return Site.hasSelectedTags(rule.tags, selected) && Site.inSelectedSpaces(KibanaData.recordSpaces(rule), spaces);
+  });
   const tagFilter = Site.tagFilter(KibanaData.allTags(data),
-    selected.length > 0 ? `showing ${formatNumber(rules.length)} of ${formatNumber(allRules.length)} rules` : undefined);
+    Site.isFiltered() ? `showing ${formatNumber(rules.length)} of ${formatNumber(allRules.length)} rules` : undefined,
+    KibanaData.allSpaces(data));
 
   const { id, q } = KibanaData.hashParams();
   const list = section('rules', renderRules(data, rules, q));

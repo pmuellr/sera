@@ -1,0 +1,340 @@
+#!/usr/bin/env node
+// @ts-check
+
+// Write a Kibana saved objects import file, NDJSON, of demo rules over the
+// Kibana sample data sets, and the email and Slack connectors they use.
+//
+//   scripts/sera-demo-rules [file]    default demo/sample-data-rules.ndjson
+//
+// There are 100 rules: index threshold and Elasticsearch query rules, over
+// the sample web logs, flights, and eCommerce data, with a mix of tags,
+// intervals, and actions.  Import it in Stack Management, Saved objects.
+// Imported rules are disabled, and connector secrets aren't imported, so
+// after the import, set the Slack connector's webhook URL, and edit and save
+// the email connector with your mail server, then enable the rules.  The ids are made from the
+// names, so importing again replaces the same objects.
+//
+// It uses no npm packages.
+
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+
+const DEFAULT_FILE = path.join('demo', 'sample-data-rules.ndjson');
+// the saved objects are written as from this version, so newer Kibanas
+// migrate them, and older ones down to it import them
+const CORE_MIGRATION_VERSION = '8.8.0';
+const RULE_MIGRATION_VERSION = '8.8.0';
+const CONNECTOR_MIGRATION_VERSION = '8.3.0';
+const CREATED_AT = '2026-11-10T00:00:00.000Z';
+
+/** @typedef {{ index: string; timeField: string; team: string; tag: string }} DataSet */
+
+/** @type {Record<string, DataSet>} */
+const DATA = {
+  logs: { index: 'kibana_sample_data_logs', timeField: 'timestamp', team: 'team-web', tag: 'sample-logs' },
+  flights: { index: 'kibana_sample_data_flights', timeField: 'timestamp', team: 'team-travel', tag: 'sample-flights' },
+  ecommerce: { index: 'kibana_sample_data_ecommerce', timeField: 'order_date', team: 'team-retail', tag: 'sample-ecommerce' },
+};
+
+/**
+ * Index threshold rules, each made for three time windows.  base is the
+ * threshold for an hour; counts and sums are scaled for the longer windows.
+ * @typedef {{ data: string; name: string; aggType: 'count' | 'avg' | 'sum' | 'max'; aggField?: string; termField?: string; termSize?: number; base: number }} ThresholdRule
+ * @type {ThresholdRule[]}
+ */
+const THRESHOLD_RULES = [
+  { data: 'logs', name: 'web requests', aggType: 'count', base: 8 },
+  { data: 'logs', name: 'requests by host', aggType: 'count', termField: 'host.keyword', termSize: 5, base: 2 },
+  { data: 'logs', name: 'requests by OS', aggType: 'count', termField: 'machine.os.keyword', termSize: 5, base: 2 },
+  { data: 'logs', name: 'requests by source country', aggType: 'count', termField: 'geo.src', termSize: 10, base: 1 },
+  { data: 'logs', name: 'average bytes by extension', aggType: 'avg', aggField: 'bytes', termField: 'extension.keyword', termSize: 5, base: 5000 },
+  { data: 'logs', name: 'largest response', aggType: 'max', aggField: 'bytes', base: 15000 },
+  { data: 'logs', name: 'bytes served by host', aggType: 'sum', aggField: 'bytes', termField: 'host.keyword', termSize: 5, base: 15000 },
+  { data: 'logs', name: 'requests by URL', aggType: 'count', termField: 'url.keyword', termSize: 10, base: 1 },
+  { data: 'flights', name: 'flights by carrier', aggType: 'count', termField: 'Carrier', termSize: 4, base: 4 },
+  { data: 'flights', name: 'average delay by carrier', aggType: 'avg', aggField: 'FlightDelayMin', termField: 'Carrier', termSize: 4, base: 30 },
+  { data: 'flights', name: 'average ticket price by destination', aggType: 'avg', aggField: 'AvgTicketPrice', termField: 'DestCountry', termSize: 10, base: 700 },
+  { data: 'flights', name: 'longest delay by origin', aggType: 'max', aggField: 'FlightDelayMin', termField: 'OriginCountry', termSize: 10, base: 300 },
+  { data: 'flights', name: 'flights by destination weather', aggType: 'count', termField: 'DestWeather', termSize: 8, base: 2 },
+  { data: 'flights', name: 'distance flown', aggType: 'sum', aggField: 'DistanceKilometers', base: 120000 },
+  { data: 'flights', name: 'average flight time by carrier', aggType: 'avg', aggField: 'FlightTimeMin', termField: 'Carrier', termSize: 4, base: 500 },
+  { data: 'ecommerce', name: 'revenue', aggType: 'sum', aggField: 'taxful_total_price', base: 400 },
+  { data: 'ecommerce', name: 'average order value by country', aggType: 'avg', aggField: 'taxful_total_price', termField: 'geoip.country_iso_code', termSize: 10, base: 90 },
+  { data: 'ecommerce', name: 'orders by customer gender', aggType: 'count', termField: 'customer_gender', termSize: 2, base: 2 },
+  { data: 'ecommerce', name: 'items sold by day of week', aggType: 'sum', aggField: 'total_quantity', termField: 'day_of_week', termSize: 7, base: 5 },
+  { data: 'ecommerce', name: 'orders by category', aggType: 'count', termField: 'category.keyword', termSize: 6, base: 1 },
+];
+const THRESHOLD_WINDOWS = [{ size: 1, unit: 'h', scale: 1 }, { size: 6, unit: 'h', scale: 6 }, { size: 24, unit: 'h', scale: 24 }];
+
+/**
+ * Elasticsearch query rules, each made for two time windows: matching any
+ * document in an hour, and more than `daily` in a day.
+ * @typedef {{ data: string; name: string; query: object; daily: number }} QueryRule
+ * @type {QueryRule[]}
+ */
+const QUERY_RULES = [
+  { data: 'logs', name: 'server errors', query: { match: { response: '503' } }, daily: 5 },
+  { data: 'logs', name: 'pages not found', query: { match: { response: '404' } }, daily: 5 },
+  { data: 'logs', name: 'large downloads', query: { range: { bytes: { gte: 15000 } } }, daily: 3 },
+  { data: 'logs', name: 'zip downloads', query: { match: { extension: 'zip' } }, daily: 10 },
+  { data: 'logs', name: 'rpm downloads', query: { match: { extension: 'rpm' } }, daily: 5 },
+  { data: 'logs', name: 'requests tagged security', query: { match: { tags: 'security' } }, daily: 10 },
+  { data: 'logs', name: 'requests tagged error', query: { match: { tags: 'error' } }, daily: 10 },
+  { data: 'logs', name: 'requests from old browsers', query: { match_phrase: { agent: 'MSIE' } }, daily: 20 },
+  { data: 'flights', name: 'cancelled flights', query: { term: { Cancelled: true } }, daily: 20 },
+  { data: 'flights', name: 'long delays', query: { range: { FlightDelayMin: { gte: 180 } } }, daily: 20 },
+  { data: 'flights', name: 'thunderstorms at the destination', query: { term: { DestWeather: 'Thunder & Lightning' } }, daily: 20 },
+  { data: 'flights', name: 'security delays', query: { term: { FlightDelayType: 'Security Delay' } }, daily: 2 },
+  { data: 'flights', name: 'expensive tickets', query: { range: { AvgTicketPrice: { gte: 1100 } } }, daily: 10 },
+  { data: 'flights', name: 'weather delays', query: { term: { FlightDelayType: 'Weather Delay' } }, daily: 10 },
+  { data: 'flights', name: 'air traffic control delays', query: { term: { FlightDelayType: 'NAS Delay' } }, daily: 10 },
+  { data: 'ecommerce', name: 'big orders', query: { range: { taxful_total_price: { gte: 200 } } }, daily: 3 },
+  { data: 'ecommerce', name: 'bulk orders', query: { range: { total_quantity: { gte: 4 } } }, daily: 3 },
+  { data: 'ecommerce', name: 'Elitelligence orders', query: { match: { manufacturer: 'Elitelligence' } }, daily: 30 },
+  { data: 'ecommerce', name: 'orders from Great Britain', query: { term: { 'geoip.country_iso_code': 'GB' } }, daily: 5 },
+  { data: 'ecommerce', name: 'women\'s shoes orders', query: { match_phrase: { category: 'Women\'s Shoes' } }, daily: 20 },
+];
+const QUERY_WINDOWS = [{ size: 1, unit: 'h' }, { size: 24, unit: 'h' }];
+
+const INTERVALS = ['1m', '5m', '5m', '15m', '1h'];
+const SEVERITIES = ['severity:high', 'severity:medium', 'severity:low'];
+// the rules that run more often than the default minimum interval, of a minute
+const NOISY_RULES = ['web requests, last 1h', 'server errors, last 1h'];
+
+const CONNECTORS = {
+  slack: {
+    id: id('connector', 'slack'),
+    name: 'Demo Slack #alerts',
+    actionTypeId: '.slack',
+    config: {},
+    isMissingSecrets: true,
+  },
+  email: {
+    id: id('connector', 'email'),
+    name: 'Demo email on-call',
+    actionTypeId: '.email',
+    config: {
+      service: 'other',
+      host: 'smtp.example.com',
+      port: 587,
+      secure: false,
+      from: 'alerts@example.com',
+      hasAuth: false,
+      tenantId: null,
+      clientId: null,
+      oauthTokenUrl: null,
+    },
+    isMissingSecrets: true,
+  },
+};
+
+main();
+
+function main() {
+  if (process.argv.slice(2).some(function (arg) { return arg === '-h' || arg === '--help'; })) {
+    console.log(`usage: ${path.basename(__filename)} [file]\n\nWrites demo rules and connectors for the Kibana sample data to file, default ${DEFAULT_FILE}.`);
+    return;
+  }
+  const file = process.argv[2] ?? DEFAULT_FILE;
+  const rules = ruleSpecs().map(toRule);
+  const objects = [...Object.values(CONNECTORS).map(toConnector), ...rules];
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, objects.map(function (object) { return JSON.stringify(object); }).join('\n') + '\n');
+  console.log(`wrote ${rules.length} rules and ${Object.keys(CONNECTORS).length} connectors to ${file}`);
+}
+
+/**
+ * A stable id, in the form of a UUID, from the names.
+ * @type {(...names: string[]) => string}
+ */
+function id(...names) {
+  const hex = crypto.createHash('sha256').update(['sera-demo', ...names].join('\0')).digest('hex');
+  return [hex.slice(0, 8), hex.slice(8, 12), `4${hex.slice(13, 16)}`, `8${hex.slice(17, 20)}`, hex.slice(20, 32)].join('-');
+}
+
+/**
+ * @typedef {{
+ *   name: string;
+ *   data: DataSet;
+ *   ruleTypeId: '.index-threshold' | '.es-query';
+ *   group: string;
+ *   params: object;
+ *   message: string;
+ * }} RuleSpec
+ */
+
+/** @type {() => RuleSpec[]} */
+function ruleSpecs() {
+  /** @type {RuleSpec[]} */
+  const specs = [];
+  for (const rule of THRESHOLD_RULES) {
+    for (const window of THRESHOLD_WINDOWS) {
+      const scaled = rule.aggType === 'count' || rule.aggType === 'sum' ? rule.base * window.scale : rule.base;
+      const data = DATA[rule.data];
+      specs.push({
+        name: `${rule.name}, last ${window.size}${window.unit}`,
+        data,
+        ruleTypeId: '.index-threshold',
+        group: 'threshold met',
+        params: {
+          index: [data.index],
+          timeField: data.timeField,
+          aggType: rule.aggType,
+          ...(rule.aggField ? { aggField: rule.aggField } : {}),
+          groupBy: rule.termField ? 'top' : 'all',
+          ...(rule.termField ? { termField: rule.termField, termSize: rule.termSize } : {}),
+          timeWindowSize: window.size,
+          timeWindowUnit: window.unit,
+          thresholdComparator: '>',
+          threshold: [scaled],
+        },
+        message: '{{context.message}}',
+      });
+    }
+  }
+  for (const rule of QUERY_RULES) {
+    for (const window of QUERY_WINDOWS) {
+      const data = DATA[rule.data];
+      specs.push({
+        name: `${rule.name}, last ${window.size}${window.unit}`,
+        data,
+        ruleTypeId: '.es-query',
+        group: 'query matched',
+        params: {
+          searchType: 'esQuery',
+          index: [data.index],
+          timeField: data.timeField,
+          esQuery: JSON.stringify({ query: rule.query }, null, 2),
+          size: 100,
+          sourceFields: [],
+          aggType: 'count',
+          groupBy: 'all',
+          termSize: 5,
+          excludeHitsFromPreviousRun: window.size === 1,
+          timeWindowSize: window.size,
+          timeWindowUnit: window.unit,
+          thresholdComparator: '>',
+          threshold: [window.size === 1 ? 0 : rule.daily],
+        },
+        message: '{{context.message}}',
+      });
+    }
+  }
+  return specs;
+}
+
+/**
+ * A rule saved object.  Its actions vary with its position: Slack, email,
+ * both, with an email when it recovers, or none.
+ * @type {(spec: RuleSpec, index: number) => object}
+ */
+function toRule(spec, index) {
+  const ruleId = id('rule', spec.name);
+  const noisy = NOISY_RULES.includes(spec.name);
+  /** @type {{ connector: keyof typeof CONNECTORS; group: string; summary: boolean }[]} */
+  let actions;
+  switch (index % 10) {
+    case 0: case 1: case 2: case 3:
+      actions = [{ connector: 'slack', group: spec.group, summary: index % 3 === 0 }];
+      break;
+    case 4: case 5:
+      actions = [{ connector: 'email', group: spec.group, summary: false }];
+      break;
+    case 6: case 7:
+      actions = [
+        { connector: 'slack', group: spec.group, summary: false },
+        { connector: 'email', group: spec.group, summary: false },
+        { connector: 'email', group: 'recovered', summary: false },
+      ];
+      break;
+    default:
+      actions = [];
+  }
+
+  return {
+    type: 'alert',
+    id: ruleId,
+    attributes: {
+      name: `Demo: ${spec.name}`,
+      tags: ['demo', spec.data.tag, spec.data.team, SEVERITIES[index % SEVERITIES.length], ...(noisy ? ['noisy'] : [])],
+      alertTypeId: spec.ruleTypeId,
+      consumer: 'stackAlerts',
+      schedule: { interval: noisy ? '30s' : INTERVALS[index % INTERVALS.length] },
+      enabled: false,
+      params: spec.params,
+      actions: actions.map(function (action, actionIndex) {
+        return {
+          group: action.group,
+          actionRef: `action_${actionIndex}`,
+          actionTypeId: CONNECTORS[action.connector].actionTypeId,
+          uuid: id('action', spec.name, String(actionIndex)),
+          frequency: action.summary
+            ? { summary: true, notifyWhen: 'onThrottleInterval', throttle: '1h' }
+            : { summary: false, notifyWhen: 'onActionGroupChange', throttle: null },
+          params: actionParams(action.connector, action.group, action.summary, spec.message),
+        };
+      }),
+      throttle: null,
+      notifyWhen: null,
+      apiKey: null,
+      apiKeyOwner: null,
+      apiKeyCreatedByUser: null,
+      legacyId: null,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+      muteAll: false,
+      mutedInstanceIds: [],
+      snoozeSchedule: [],
+      executionStatus: { status: 'pending', lastExecutionDate: CREATED_AT, error: null, warning: null },
+      revision: 0,
+      running: false,
+    },
+    references: actions.map(function (action, actionIndex) {
+      return { name: `action_${actionIndex}`, type: 'action', id: CONNECTORS[action.connector].id };
+    }),
+    managed: false,
+    coreMigrationVersion: CORE_MIGRATION_VERSION,
+    typeMigrationVersion: RULE_MIGRATION_VERSION,
+    created_at: CREATED_AT,
+    updated_at: CREATED_AT,
+  };
+}
+
+/** @type {(connector: keyof typeof CONNECTORS, group: string, summary: boolean, message: string) => object} */
+function actionParams(connector, group, summary, message) {
+  const recovered = group === 'recovered';
+  const text = summary
+    ? '{{alerts.new.count}} new, {{alerts.ongoing.count}} ongoing, and {{alerts.recovered.count}} recovered alerts for {{rule.name}}'
+    : recovered ? '{{rule.name}}: {{alert.id}} recovered' : `{{rule.name}}: ${message}`;
+  if (connector === 'slack') return { message: `${text}\n{{rule.url}}` };
+  return {
+    to: ['oncall@example.com'],
+    subject: recovered ? 'Recovered: {{rule.name}}' : 'Alert: {{rule.name}}',
+    message: `${text}\n\n{{rule.url}}`,
+  };
+}
+
+/** @type {(connector: typeof CONNECTORS[keyof typeof CONNECTORS]) => object} */
+function toConnector(connector) {
+  return {
+    type: 'action',
+    id: connector.id,
+    attributes: {
+      actionTypeId: connector.actionTypeId,
+      name: connector.name,
+      isMissingSecrets: connector.isMissingSecrets,
+      config: connector.config,
+    },
+    references: [],
+    managed: false,
+    coreMigrationVersion: CORE_MIGRATION_VERSION,
+    typeMigrationVersion: CONNECTOR_MIGRATION_VERSION,
+    created_at: CREATED_AT,
+    updated_at: CREATED_AT,
+  };
+}

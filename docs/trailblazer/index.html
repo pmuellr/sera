@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sera - TrailBlazer</title>
+  <link rel="icon" href="../site/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../site/site.css">
+  <link rel="stylesheet" href="trailblazer.css">
+  <script src="../site/pages.js"></script>
+  <script src="../site/site.js"></script>
+  <script src="../site/kibana-data.js"></script>
+  <script src="../vendor/discover-url.js"></script>
+</head>
+<body>
+<main class="trailblazer-main">
+  <h1>TrailBlazer</h1>
+  <p>
+    Browse the loaded data by following the links between rules, connectors,
+    alerts, event log documents, and the Task Manager health report.
+    Selecting an item opens it in a pane to the right, replacing the panes
+    after it.  Use the arrow keys to move up and down a list, and left and
+    right between panes.  Searches run over the loaded data, not Elasticsearch.
+  </p>
+  <div id="input"></div>
+  <div id="output"></div>
+</main>
+<script src="trailblazer.js"></script>
+</body>
+</html>

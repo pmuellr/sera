@@ -36,9 +36,13 @@ function render() {
     return;
   }
   const selected = Site.selectedTags();
-  const alerts = allAlerts.filter(function (alert) { return Site.hasSelectedTags(KibanaData.alertTags(loaded, alert), selected); });
+  const spaces = Site.selectedSpaces();
+  const alerts = allAlerts.filter(function (alert) {
+    return Site.hasSelectedTags(KibanaData.alertTags(loaded, alert), selected) && Site.inSelectedSpaces(alert.spaces, spaces);
+  });
   const tagFilter = Site.tagFilter(KibanaData.allTags(loaded),
-    selected.length > 0 ? `showing ${formatNumber(alerts.length)} of ${formatNumber(allAlerts.length)} alerts` : undefined);
+    Site.isFiltered() ? `showing ${formatNumber(alerts.length)} of ${formatNumber(allAlerts.length)} alerts` : undefined,
+    KibanaData.allSpaces(loaded));
 
   const { id, q } = KibanaData.hashParams();
   const byRule = section('alerts by rule', renderByRule(data, alerts, q));

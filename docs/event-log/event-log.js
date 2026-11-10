@@ -48,6 +48,7 @@ const input = /** @type {HTMLElement} */ (document.getElementById('input'));
  *   connectorType: string | undefined;
  *   relatedRuleId: string | undefined;
  *   tags: string[];
+ *   spaces: string[];
  * }} LogEvent
  */
 
@@ -124,6 +125,7 @@ function toEvent(doc) {
     connectorType: isAction ? (get(doc, 'kibana.action.type_id') ?? savedObject('action')?.type_id) : undefined,
     relatedRuleId: get(doc, 'rule.id') ?? savedObject('alert')?.id,
     tags: toArray(get(doc, 'kibana.alert.rule.tags')).map(String),
+    spaces: KibanaData.eventSpaces(doc),
   };
 }
 
@@ -144,15 +146,19 @@ function render() {
     return;
   }
   const selected = Site.selectedTags();
-  events = allEvents.filter(function (event) { return Site.hasSelectedTags(eventTags(event), selected); });
+  const spaces = Site.selectedSpaces();
+  events = allEvents.filter(function (event) {
+    return Site.hasSelectedTags(eventTags(event), selected) && Site.inSelectedSpaces(event.spaces, spaces);
+  });
   const tagFilter = Site.tagFilter(
     [...allEvents.flatMap(eventTags), ...(kibanaData ? KibanaData.allTags(kibanaData) : [])],
-    selected.length > 0
-      ? `showing ${formatNumber(events.length)} of ${formatNumber(allEvents.length)} documents, ` +
-        'those with the tags, or whose rules have them, when the rules are loaded'
-      : undefined);
+    Site.isFiltered()
+      ? `showing ${formatNumber(events.length)} of ${formatNumber(allEvents.length)} documents` +
+        (selected.length > 0 ? ', those with the tags, or whose rules have them, when the rules are loaded' : '')
+      : undefined,
+    kibanaData ? KibanaData.allSpaces(kibanaData) : []);
   if (events.length === 0) {
-    output.replaceChildren(tagFilter ?? '', h('p', { class: 'muted' }, 'None of the documents have the selected rule tags.'));
+    output.replaceChildren(tagFilter ?? '', h('p', { class: 'muted' }, 'None of the documents have the selected rule tags and spaces.'));
     return;
   }
 

@@ -72,6 +72,7 @@ const RECENT_TAGS_KEY = 'sera.tags.recent';
 const MAX_RECENT_TAGS = 10;
 const KNOWN_TAGS_KEY = 'sera.tags.known';
 const TAGS_EVENT = 'sera-tags-changed';
+const SPACES_KEY = 'sera.spaces';
 
 // textareas get slow with very large values, so larger input isn't shown in them
 const MAX_TEXTAREA_LENGTH = 2 * 1024 * 1024;
@@ -182,7 +183,7 @@ function onSettingsChange(fn) {
 }
 
 // ---------------------------------------------------------------------------
-// the rule tags filter, shared by the pages, saved in localStorage
+// the rule tags and spaces filters, shared by the pages, saved in localStorage
 // ---------------------------------------------------------------------------
 
 /** @type {(key: string) => any} */
@@ -235,12 +236,44 @@ function clearRecentTags() {
 }
 
 /**
- * Call `fn` when the selected tags change, on this page or in another tab.
+ * Call `fn` when the selected tags or spaces change, on this page or in
+ * another tab.
  * @type {(fn: () => void) => void}
  */
 function onTagsChange(fn) {
   window.addEventListener(TAGS_EVENT, fn);
-  window.addEventListener('storage', function (event) { if (event.key === TAGS_KEY) fn(); });
+  window.addEventListener('storage', function (event) { if (event.key === TAGS_KEY || event.key === SPACES_KEY) fn(); });
+}
+
+/** @type {() => string[]} */
+function selectedSpaces() {
+  const spaces = readJson(SPACES_KEY);
+  return Array.isArray(spaces) ? spaces.map(String) : [];
+}
+
+/** @type {(spaces: string[]) => void} */
+function setSelectedSpaces(spaces) {
+  writeJson(SPACES_KEY, spaces);
+  window.dispatchEvent(new CustomEvent(TAGS_EVENT));
+}
+
+/**
+ * Whether something in the spaces is in a selected space.  What isn't in a
+ * space, like preconfigured connectors, or is in every space, `*`, is in all
+ * of them.
+ * @type {(spaces: string[], selected?: string[]) => boolean}
+ */
+function inSelectedSpaces(spaces, selected = selectedSpaces()) {
+  if (selected.length === 0 || spaces.length === 0 || spaces.includes('*')) return true;
+  return spaces.some(function (space) { return selected.includes(space); });
+}
+
+/**
+ * Whether any rule tags or spaces are selected, so the pages are filtered.
+ * @type {() => boolean}
+ */
+function isFiltered() {
+  return selectedTags().length > 0 || selectedSpaces().length > 0;
 }
 
 /**
@@ -268,107 +301,168 @@ function hasSelectedTags(tags, selected = selectedTags()) {
 }
 
 /**
- * The state of the tag dropdown, kept while the page re-renders it after each
- * change to the selected tags.
+ * The state of the filter dropdowns, kept while the page re-renders them
+ * after each change to the selection: which one is open, and the search and
+ * scroll position of each.
+ * @type {{ open: string | undefined; query: Record<string, string>; scrollTop: Record<string, number> }}
  */
-const tagMenu = { open: false, query: '', scrollTop: 0 };
+const filterMenu = { open: undefined, query: {}, scrollTop: {} };
 
 document.addEventListener('click', function (event) {
   const target = /** @type {Element | null} */ (event.target);
-  if (tagMenu.open && !target?.closest?.('.tag-dropdown')) closeTagMenus();
+  if (filterMenu.open && !target?.closest?.('.tag-dropdown')) closeFilterMenus();
 });
 document.addEventListener('keydown', function (event) {
-  if (event.key === 'Escape' && tagMenu.open) closeTagMenus();
+  if (event.key === 'Escape' && filterMenu.open) closeFilterMenus();
 });
 
-function closeTagMenus() {
-  tagMenu.open = false;
+function closeFilterMenus() {
+  filterMenu.open = undefined;
   for (const menu of document.querySelectorAll('details.tag-dropdown')) menu.removeAttribute('open');
 }
 
 /**
- * A dropdown to select rule tags: those given, the ones other pages
- * remembered, and the selected and recently selected ones, which are listed
- * first.  What's shown must have all the selected tags.  `note` describes
- * what's shown.
- * @type {(tags: string[], note?: Child) => HTMLElement | undefined}
+ * The rule tags and spaces filters, and a note describing what's shown.
+ * The tags are those given, the ones other pages remembered, and the
+ * selected and recently selected ones, which are listed first; what's shown
+ * must have all the selected tags.  What's shown must be in one of the
+ * selected spaces.  The spaces filter is left out when there are no spaces.
+ * @type {(tags: string[], note?: Child, spaces?: string[]) => HTMLElement | undefined}
  */
-function tagFilter(tags, note) {
+function tagFilter(tags, note, spaces = []) {
   const selected = selectedTags();
   const recent = [...new Set([...recentTags(), ...selected])];
   const others = [...new Set([...tags, ...knownTags()])]
     .filter(function (tag) { return !recent.includes(tag); })
     .sort(function (a, b) { return a.localeCompare(b); });
-  const count = recent.length + others.length;
-  if (count === 0) return undefined;
 
+  const spacesSelected = selectedSpaces();
+  const allSpaces = [...new Set([...spaces, ...spacesSelected])]
+    .filter(function (space) { return space !== '*'; })
+    .sort(function (a, b) { return a === 'default' ? -1 : b === 'default' ? 1 : a.localeCompare(b); });
+
+  const tagMenu = recent.length + others.length === 0 ? undefined : checkDropdown({
+    id: 'tags',
+    label: 'rule tags',
+    noun: 'tags',
+    groups: [
+      { heading: 'recent', items: recent },
+      { heading: recent.length > 0 ? 'all tags' : undefined, items: others },
+    ],
+    selected,
+    summary: selected.length <= 2 ? selected.join(' and ') : `${formatNumber(selected.length)} tags`,
+    footer: 'shows what has all the selected tags',
+    onChange: setSelectedTags,
+    extra: recentTags().length > 0 && h('button', { type: 'button', class: 'tag-clear', onclick: clearRecentTags }, 'clear history'),
+  });
+  const spaceMenu = allSpaces.length === 0 ? undefined : checkDropdown({
+    id: 'spaces',
+    label: 'spaces',
+    noun: 'spaces',
+    groups: [{ heading: undefined, items: allSpaces }],
+    selected: spacesSelected,
+    summary: spacesSelected.length <= 2 ? spacesSelected.join(' or ') : `${formatNumber(spacesSelected.length)} spaces`,
+    footer: 'shows what is in any of the selected spaces',
+    onChange: setSelectedSpaces,
+  });
+  if (!tagMenu && !spaceMenu) return undefined;
+
+  return h('div', { class: 'tag-filter' },
+    tagMenu,
+    spaceMenu,
+    (selected.length > 0 || spacesSelected.length > 0) && h('button', {
+      type: 'button',
+      class: 'tag-clear',
+      onclick: function () {
+        writeJson(SPACES_KEY, []);
+        setSelectedTags([]);
+      },
+    }, 'clear'),
+    note && h('span', { class: 'muted tag-filter-note' }, note),
+  );
+}
+
+/**
+ * A dropdown of checkboxes, with a search, for a filter.
+ * @type {(options: {
+ *   id: string;
+ *   label: string;
+ *   noun: string;
+ *   groups: { heading: string | undefined; items: string[] }[];
+ *   selected: string[];
+ *   summary: string;
+ *   footer: string;
+ *   onChange: (selected: string[]) => void;
+ *   extra?: Child;
+ * }) => HTMLElement}
+ */
+function checkDropdown({ id, label, noun, groups, selected, summary, footer, onChange, extra }) {
+  const count = groups.reduce(function (sum, group) { return sum + group.items.length; }, 0);
   const search = h('input', {
     type: 'search',
-    placeholder: `search ${formatNumber(count)} tags`,
-    value: tagMenu.query,
+    placeholder: `search ${formatNumber(count)} ${noun}`,
+    value: filterMenu.query[id] ?? '',
     oninput: function () {
-      tagMenu.query = search.value;
+      filterMenu.query[id] = search.value;
       applySearch();
     },
   });
   const options = h('div', { class: 'tag-options' },
-    recent.length > 0 && tagGroup('recent', recent),
-    others.length > 0 && tagGroup(recent.length > 0 ? 'all tags' : undefined, others),
-  );
-  const empty = h('div', { class: 'muted tag-none' }, 'no matching tags');
+    groups.filter(function (group) { return group.items.length > 0; }).map(optionGroup));
+  const empty = h('div', { class: 'muted tag-none' }, `no matching ${noun}`);
   applySearch();
 
-  const menu = h('details', { class: 'tag-dropdown', open: tagMenu.open },
+  const isOpen = filterMenu.open === id;
+  const menu = h('details', { class: 'tag-dropdown', open: isOpen },
     h('summary', { title: selected.join(', ') },
-      h('span', { class: 'muted' }, 'rule tags: '),
-      selected.length === 0 ? 'any' : selected.length <= 2 ? selected.join(' and ') : `${formatNumber(selected.length)} tags`),
+      h('span', { class: 'muted' }, `${label}: `),
+      selected.length === 0 ? 'any' : summary),
     h('div', { class: 'tag-menu' },
       search,
       options,
       empty,
-      h('div', { class: 'tag-menu-footer' },
-        h('span', { class: 'muted' }, 'shows what has all the selected tags'),
-        recentTags().length > 0 && h('button', { type: 'button', class: 'tag-clear', onclick: clearRecentTags }, 'clear history'),
-      ),
+      h('div', { class: 'tag-menu-footer' }, h('span', { class: 'muted' }, footer), extra),
     ),
   );
   menu.addEventListener('toggle', function () {
-    tagMenu.open = menu.open;
-    if (menu.open) search.focus();
+    if (menu.open) {
+      for (const other of document.querySelectorAll('details.tag-dropdown')) {
+        if (other !== menu) other.removeAttribute('open');
+      }
+      filterMenu.open = id;
+      search.focus();
+    } else if (filterMenu.open === id) {
+      filterMenu.open = undefined;
+    }
   });
-  if (tagMenu.open) {
+  if (isOpen) {
     requestAnimationFrame(function () {
-      options.scrollTop = tagMenu.scrollTop;
+      options.scrollTop = filterMenu.scrollTop[id] ?? 0;
     });
   }
+  return menu;
 
-  return h('div', { class: 'tag-filter' },
-    menu,
-    selected.length > 0 && h('button', { type: 'button', class: 'tag-clear', onclick: function () { setSelectedTags([]); } }, 'clear'),
-    note && h('span', { class: 'muted tag-filter-note' }, note),
-  );
-
-  /** @type {(heading: string | undefined, list: string[]) => HTMLElement} */
-  function tagGroup(heading, list) {
+  /** @type {(group: { heading: string | undefined; items: string[] }) => HTMLElement} */
+  function optionGroup(group) {
     return h('div', { class: 'tag-group' },
-      heading && h('div', { class: 'tag-group-heading' }, heading),
-      list.map(function (tag) {
-        const isSelected = selected.includes(tag);
-        return h('label', { class: `tag-option${isSelected ? ' selected' : ''}`, 'data-tag': tag.toLowerCase() },
+      group.heading && h('div', { class: 'tag-group-heading' }, group.heading),
+      group.items.map(function (item) {
+        const isSelected = selected.includes(item);
+        return h('label', { class: `tag-option${isSelected ? ' selected' : ''}`, 'data-tag': item.toLowerCase() },
           h('input', {
             type: 'checkbox',
             checked: isSelected,
             onchange: function () {
-              tagMenu.scrollTop = options.scrollTop;
-              setSelectedTags(isSelected ? selected.filter(function (item) { return item !== tag; }) : [...selected, tag]);
+              filterMenu.scrollTop[id] = options.scrollTop;
+              onChange(isSelected ? selected.filter(function (other) { return other !== item; }) : [...selected, item]);
             },
           }),
-          ' ', tag);
+          ' ', item);
       }));
   }
 
   function applySearch() {
-    const query = tagMenu.query.trim().toLowerCase();
+    const query = (filterMenu.query[id] ?? '').trim().toLowerCase();
     let shown = 0;
     for (const group of /** @type {HTMLElement[]} */ ([...options.children])) {
       let groupShown = 0;
@@ -571,6 +665,19 @@ function saveInput(storageKey, text, source) {
 /** @type {(storageKey: string) => void} */
 function removeInput(storageKey) {
   sessionStorage.removeItem(INPUT_KEY_PREFIX + storageKey);
+}
+
+/**
+ * The input saved for the page whose input panel has `storageKey`.
+ * @type {(storageKey: string) => { text: string; source: string } | undefined}
+ */
+function loadInput(storageKey) {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(INPUT_KEY_PREFIX + storageKey) ?? 'null');
+    return typeof value?.text === 'string' ? value : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1096,7 +1203,8 @@ function formatBytes(bytes) {
   if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 1)} KB`;
-  return `${formatNumber(bytes / 1024 / 1024, 1)} MB`;
+  if (bytes < 1024 * 1024 * 1024) return `${formatNumber(bytes / 1024 / 1024, 1)} MB`;
+  return `${formatNumber(bytes / 1024 / 1024 / 1024, 1)} GB`;
 }
 
 /** @type {(value: unknown) => string} */
@@ -1196,11 +1304,15 @@ return {
   onTagsChange,
   rememberTags,
   hasSelectedTags,
+  selectedSpaces,
+  inSelectedSpaces,
+  isFiltered,
   tagFilter,
   inputPanel,
   dataPanel,
   saveInput,
   removeInput,
+  loadInput,
   parseDataFile,
   parseJsonValues,
   splitDevToolsOutput,

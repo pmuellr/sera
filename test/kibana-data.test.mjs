@@ -308,6 +308,34 @@ test('loads a sera data file', async function () {
   ]);
 });
 
+test('loads the rules and connectors of each space from a version 2 sera data file', async function () {
+  const dataFile = site.parseDataFile(JSON.stringify({
+    meta: { format: 'sera-data', version: 2, kibanaUrl: 'https://kibana.example.com' },
+    spaces: [{ id: 'default', name: 'Default' }, { id: 'security', name: 'Security' }],
+    rules: { default: fixture('rules-space-default.json'), security: fixture('rules-space-security.json') },
+    connectors: { default: fixture('connectors-space-default.json'), security: fixture('connectors-space-security.json') },
+  }));
+  assert.ok(dataFile);
+  await kibanaData.loadDataFile(dataFile, 'spaces.sera.json');
+
+  const data = await kibanaData.load();
+  /** @type {(records: { space: string | undefined }[]) => Record<string, number>} */
+  function bySpace(records) {
+    /** @type {Record<string, number>} */
+    const counts = {};
+    for (const record of records) counts[String(record.space)] = (counts[String(record.space)] ?? 0) + 1;
+    return counts;
+  }
+  const security = fixture('rules-space-security.json').data.length;
+  assert.deepEqual({ ...bySpace(data.rules?.records ?? []) }, { default: 11, security });
+  assert.equal(data.rules?.source, 'spaces.sera.json');
+  const connectorIds = new Set([...fixture('connectors-space-default.json'), ...fixture('connectors-space-security.json')]
+    .map(function (/** @type {any} */ connector) { return connector.id; }));
+  assert.equal(data.connectors?.records.length, connectorIds.size, 'connectors in both spaces are kept once');
+  assert.deepEqual({ ...bySpace(data.connectors?.records ?? []) }, { default: 4, undefined: 2 },
+    'preconfigured and system connectors aren\'t in a space');
+});
+
 test('a sera data file replaces the Kibana URL setting', async function () {
   site.setSettings({ ...site.getSettings(), kibanaUrl: 'https://set-in-settings.example.com' });
   const dataFile = site.parseDataFile(JSON.stringify({
@@ -316,6 +344,66 @@ test('a sera data file replaces the Kibana URL setting', async function () {
   assert.ok(dataFile);
   await kibanaData.loadDataFile(dataFile, 'kibana-url.sera.json');
   assert.equal(site.getSettings().kibanaUrl, 'https://from-the-file.example.com');
+});
+
+test('keeps each sera data file in its own session', async function () {
+  const first = site.parseDataFile(JSON.stringify({
+    meta: { format: 'sera-data', version: 1 },
+    'task-manager-health': fixture('task-manager-health.json'),
+    rules: fixture('rules-space-default.json'),
+  }));
+  const second = site.parseDataFile(JSON.stringify({ meta: { format: 'sera-data', version: 1 }, alerts: fixture('alerts-search.json') }));
+  assert.ok(first && second);
+  await kibanaData.loadDataFile(first, 'first.sera.json');
+  const firstId = kibanaData.currentSessionId();
+  await kibanaData.loadDataFile(second, 'second.sera.json');
+  const secondId = kibanaData.currentSessionId();
+  assert.ok(firstId && secondId && firstId !== secondId);
+  assert.equal(storage.getItem('sera.input.task-manager-health'), null, 'the second file has no health report');
+
+  let data = await kibanaData.load();
+  assert.equal(data.rules, undefined);
+  assert.equal(data.alerts?.records.length, 25);
+
+  const connectors = fixture('connectors-space-default.json').length;
+  await kibanaData.saveClassified(kibanaData.classifyFiles([fixtureFile('connectors-space-default.json')]), 'connectors');
+  data = await kibanaData.load();
+  assert.equal(data.connectors?.records.length, connectors, 'responses are added to the current session');
+  assert.equal(data.alerts?.records.length, 25);
+
+  const sessions = await kibanaData.listSessions();
+  const secondSession = sessions.find(function (session) { return session.id === secondId; });
+  assert.equal(secondSession?.name, 'second.sera.json');
+  assert.deepEqual({ ...secondSession?.counts }, { alerts: 25, connectors });
+  assert.ok((secondSession?.sizes.alerts ?? 0) > 0);
+  assert.ok(sessions.find(function (session) { return session.id === firstId; })?.sizes.health);
+
+  await kibanaData.useSession(firstId);
+  data = await kibanaData.load();
+  assert.equal(data.rules?.records.length, 11);
+  assert.equal(data.alerts, undefined);
+  assert.equal(JSON.parse(storage.getItem('sera.input.task-manager-health') ?? 'null')?.source, 'first.sera.json',
+    'the session\'s health report is restored');
+
+  await kibanaData.deleteSession(firstId);
+  assert.equal(kibanaData.currentSessionId(), undefined);
+  assert.equal(storage.getItem('sera.input.task-manager-health'), null);
+  assert.equal((await kibanaData.load()).rules, undefined);
+  assert.equal((await kibanaData.listSessions()).some(function (session) { return session.id === firstId; }), false);
+
+  await kibanaData.saveClassified(kibanaData.classifyFiles([fixtureFile('rules-space-default.json')]), 'rules');
+  const newId = kibanaData.currentSessionId();
+  assert.ok(newId && newId !== secondId, 'without a current session, responses start a new one');
+  assert.equal((await kibanaData.load()).rules?.records.length, 11);
+});
+
+test('matches the selected spaces', function () {
+  assert.equal(site.inSelectedSpaces(['security'], []), true, 'nothing selected matches everything');
+  assert.equal(site.inSelectedSpaces(['security'], ['default']), false);
+  assert.equal(site.inSelectedSpaces(['default', 'security'], ['security', 'other']), true);
+  assert.equal(site.inSelectedSpaces([], ['default']), true, 'what isn\'t in a space is in all of them');
+  assert.equal(site.inSelectedSpaces(['*'], ['default']), true);
+  assert.deepEqual([...kibanaData.recordSpaces({ space: 'default, security' })], ['default', 'security']);
 });
 
 test('parses intervals', function () {

@@ -5,7 +5,7 @@
 // show for Dev Tools, into a sera data file in the current directory, named
 // for Kibana's hostname and the time, like localhost-26-11-09-17-38.sera.json.
 // Load it on the sera home page.
-// The rules and connectors are the default space's.
+// The rules and connectors are those of every space the user can read.
 //
 //   ES_URL       Elasticsearch URL, default http://localhost:9200
 //   KB_URL       Kibana URL, including any base path, default http://localhost:5601
@@ -31,15 +31,22 @@ const DEFAULTS = {
   ES_PASSWORD: 'changeme',
 };
 
+const SPACES_PATH = '/api/spaces/space';
+// the most requests made at once, for deployments with many spaces
+const MAX_REQUESTS = 8;
+
 /**
  * The requests, by the ids of the pages that analyze them, which are their
- * property names in the sera data file.
- * @type {{ page: string; title: string; service: 'kibana' | 'elasticsearch'; path: string }[]}
+ * property names in the sera data file.  The ones inSpaces are made in each
+ * space, and their property is an object of each space's response, by space
+ * id.
+ * @typedef {{ page: string; title: string; service: 'kibana' | 'elasticsearch'; path: string; inSpaces?: boolean }} Request
+ * @type {Request[]}
  */
 const REQUESTS = [
   { page: 'task-manager-health', title: 'Task Manager health', service: 'kibana', path: '/api/task_manager/_health' },
-  { page: 'rules', title: 'rules', service: 'kibana', path: '/api/alerting/rules/_find?per_page=10000' },
-  { page: 'connectors', title: 'connectors', service: 'kibana', path: '/api/actions/connectors' },
+  { page: 'rules', title: 'rules', service: 'kibana', path: '/api/alerting/rules/_find?per_page=10000', inSpaces: true },
+  { page: 'connectors', title: 'connectors', service: 'kibana', path: '/api/actions/connectors', inSpaces: true },
   { page: 'event-log', title: 'event log', service: 'elasticsearch', path: '/.kibana-event-log-*/_search?size=10000&sort=@timestamp:desc' },
   { page: 'alerts', title: 'alerts', service: 'elasticsearch', path: '/.alerts-*/_search?size=10000&sort=@timestamp:desc' },
 ];
@@ -67,38 +74,83 @@ async function main() {
   const baseUrls = { elasticsearch: services.elasticsearch.baseUrl, kibana: services.kibana.baseUrl };
 
   const created = new Date();
-  const results = await Promise.all(REQUESTS.map(function (request) {
-    return download(baseUrls[request.service] + request.path, services[request.service].authorization);
-  }));
+  /** @type {(service: 'kibana' | 'elasticsearch', path: string) => Promise<DownloadResult>} */
+  function get(service, path) {
+    return download(baseUrls[service] + path, services[service].authorization);
+  }
 
   /** @type {Record<string, string>} */
   const errors = {};
   /** @type {{ format: string; version: number; timestamp: string; kibanaUrl: string; elasticsearchUrl: string; errors?: Record<string, string> }} */
   const meta = {
     format: 'sera-data',
-    version: 1,
+    version: 2,
     timestamp: created.toISOString(),
     kibanaUrl: baseUrls.kibana,
     elasticsearchUrl: baseUrls.elasticsearch,
   };
   /** @type {Record<string, unknown>} */
   const dataFile = { meta };
-  printColumns(REQUESTS.map(function (request, index) {
-    const result = results[index];
-    if (result.error === undefined) {
-      dataFile[request.page] = result.value;
-      return [request.title, countOf(result.value)];
-    }
-    errors[request.page] = result.error;
-    return [request.title, `error: ${result.error}`];
+  /** @type {[string, string][]} */
+  const rows = [];
+
+  const spacesResult = await get('kibana', SPACES_PATH);
+  /** @type {string[]} */
+  let spaceIds = ['default'];
+  if (spacesResult.error === undefined && Array.isArray(spacesResult.value)) {
+    dataFile.spaces = spacesResult.value;
+    spaceIds = spacesResult.value.map(function (/** @type {any} */ space) { return String(space?.id); });
+    rows.push(['spaces', `${formatNumber(spaceIds.length)}: ${spaceIds.join(', ')}`]);
+  } else {
+    errors.spaces = spacesResult.error ?? 'the response isn\'t a list of spaces';
+    rows.push(['spaces', `error: ${errors.spaces}; using the default space`]);
+  }
+
+  /** @typedef {{ request: Request; space: string | undefined }} Job */
+  /** @type {Job[]} */
+  const jobs = REQUESTS.flatMap(/** @type {(request: Request) => Job[]} */ (function (request) {
+    if (!request.inSpaces) return [{ request, space: undefined }];
+    return spaceIds.map(function (space) { return { request, space }; });
   }));
+  const results = await mapLimited(jobs, MAX_REQUESTS, function ({ request, space }) {
+    return get(request.service, space === undefined ? request.path : inSpace(request.path, space));
+  });
+
+  let failures = 0;
+  for (const request of REQUESTS) {
+    const done = jobs.map(function (job, index) { return { ...job, result: results[index] }; })
+      .filter(function (job) { return job.request === request; });
+    const succeeded = done.filter(function (job) { return job.result.error === undefined; });
+    for (const job of done) {
+      if (job.result.error === undefined) continue;
+      failures++;
+      const label = job.space === undefined ? request.page : `${request.page} in space ${job.space}`;
+      errors[label] = job.result.error;
+      if (job.space !== undefined) rows.push([`${request.title} in space ${job.space}`, `error: ${job.result.error}`]);
+    }
+    if (!request.inSpaces) {
+      const result = done[0].result;
+      if (result.error === undefined) dataFile[request.page] = result.value;
+      rows.push([request.title, result.error === undefined ? countOf(result.value) : `error: ${result.error}`]);
+    } else if (succeeded.length > 0) {
+      /** @type {Record<string, unknown>} */
+      const bySpace = {};
+      for (const job of succeeded) bySpace[String(job.space)] = job.result.value;
+      dataFile[request.page] = bySpace;
+      const spaces = succeeded.length === 1 ? '1 space' : `${formatNumber(succeeded.length)} spaces`;
+      rows.push([request.title, `${countInSpaces(succeeded.map(function (job) { return job.result.value; }))}, from ${spaces}`]);
+    } else {
+      rows.push([request.title, 'error: every space\'s request failed']);
+    }
+  }
+  printColumns(rows);
   console.log('');
   if (Object.keys(errors).length > 0) meta.errors = errors;
 
-  const failures = Object.keys(errors).length;
-  if (failures === REQUESTS.length) {
+  if (failures === jobs.length) {
     throw new Error('all of the requests failed, so no file was written');
   }
+  if (errors.spaces !== undefined) failures++;
 
   const hostname = new URL(services.kibana.baseUrl).hostname.replace(/[^a-z0-9.-]+/gi, '_');
   const fileName = `${hostname}-${timestamp(created)}.sera.json`;
@@ -145,6 +197,57 @@ function countOf(value) {
   return total !== undefined && total > items.length ? `${count} of ${formatNumber(total)}` : count;
 }
 
+/**
+ * How many were downloaded from the responses of each space, of the rules or
+ * connectors APIs.  The preconfigured and system connectors are in every
+ * space's connectors, so connectors are counted once.
+ * @type {(values: any[]) => string}
+ */
+function countInSpaces(values) {
+  if (values.every(Array.isArray)) {
+    const ids = new Set(values.flat().map(function (connector) { return connector?.id; }));
+    return formatNumber(ids.size);
+  }
+  let count = 0;
+  let total = 0;
+  for (const value of values) {
+    const items = Array.isArray(value?.data) ? value.data.length : 0;
+    count += items;
+    total += typeof value?.total === 'number' ? value.total : items;
+  }
+  return total > count ? `${formatNumber(count)} of ${formatNumber(total)}` : formatNumber(count);
+}
+
+/**
+ * A Kibana API path in a space.
+ * @type {(path: string, space: string) => string}
+ */
+function inSpace(path, space) {
+  return space === 'default' ? path : `/s/${encodeURIComponent(space)}${path}`;
+}
+
+/**
+ * Map the items with fn, running at most limit at once, keeping their order.
+ * @template T, R
+ * @param {T[]} items
+ * @param {number} limit
+ * @param {(item: T) => Promise<R>} fn
+ * @returns {Promise<R[]>}
+ */
+async function mapLimited(items, limit, fn) {
+  /** @type {R[]} */
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 /** @type {(n: number) => string} */
 function formatNumber(n) {
   return n.toLocaleString('en-US');
@@ -187,10 +290,12 @@ function service(name) {
   };
 }
 
+/** @typedef {{ status?: number; value?: any; error?: string }} DownloadResult */
+
 /**
  * GET the URL, and parse the response as JSON.  The error is set if the
  * request failed, or the response isn't JSON.
- * @type {(url: string, authorization: string) => Promise<{ status?: number; value?: unknown; error?: string }>}
+ * @type {(url: string, authorization: string) => Promise<DownloadResult>}
  */
 async function download(url, authorization) {
   /** @type {Response} */
@@ -243,7 +348,8 @@ function printHelp() {
 
 Downloads the data the sera pages analyze into a sera data file in the
 current directory, named for Kibana's hostname and the time, like
-localhost-26-11-09-17-38.sera.json.
+localhost-26-11-09-17-38.sera.json.  The rules and connectors are those of
+every space the user can read.
 
 environment variables:
   ES_URL       Elasticsearch URL, default ${DEFAULTS.ES_URL}
