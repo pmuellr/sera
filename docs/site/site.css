@@ -159,7 +159,14 @@ pre.commands { background: var(--panel); border: 1px solid var(--border); border
   border-radius: 6px;
 }
 
-.input-panel input[type=file] { display: none; }
+.input-panel input[type=file], .data-file-loader input[type=file] { display: none; }
+
+.data-file-loader {
+  margin: 1em 0; padding: 1em; border: 2px dashed var(--border); border-radius: 6px; background: var(--panel);
+}
+.data-file-loader-prompt { display: flex; align-items: center; gap: 0.75em; flex-wrap: wrap; }
+.data-file-loader-prompt button { font-size: 1.05em; padding: 0.3em 0.9em; }
+.data-file-loader ul { margin: 0.5em 0 0; }
 
 .input-buttons { display: flex; align-items: center; gap: 0.5em; margin-top: 0.4em; }
 
@@ -180,7 +187,7 @@ details.data-panel > summary:hover .data-panel-title { color: var(--accent); }
 .data-panel-body { padding: 0.75em; }
 
 .input-status { color: var(--muted); }
-.input-status.error { color: var(--error); }
+.input-status.error, .input-status .error { color: var(--error); }
 
 body.dragging::after {
   content: "drop to analyze";

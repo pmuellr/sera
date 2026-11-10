@@ -47,7 +47,7 @@ test('the home page loads home.js after the scripts it uses', function () {
   const html = fs.readFileSync(path.join(DOCS, 'index.html'), 'utf8');
   const home = html.indexOf('"site/home.js"');
   assert.ok(home >= 0, 'index.html loads site/home.js');
-  for (const script of ['site/pages.js', 'site/site.js']) {
+  for (const script of ['site/pages.js', 'site/site.js', 'site/kibana-data.js']) {
     const index = html.indexOf(`"${script}"`);
     assert.ok(index >= 0 && index < home, `index.html loads ${script} before site/home.js`);
   }

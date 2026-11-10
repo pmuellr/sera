@@ -76,6 +76,12 @@ function showData(text, source) {
 
 /** @type {(text: string) => unknown[]} */
 function parseInput(text) {
+  const dataFile = Site.parseDataFile(text);
+  if (dataFile) {
+    const report = dataFile['task-manager-health'];
+    if (report === undefined) throw new Error('the sera data file has no Task Manager health report');
+    return [report];
+  }
   try {
     return Site.parseJsonValues(text);
   } catch (err) {

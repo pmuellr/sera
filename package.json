@@ -6,6 +6,9 @@
   "license": "MIT",
   "author": "Patrick Mueller <pmuellr@apache.org> (https://github.com/pmuellr)",
   "homepage": "https://pmuellr.github.io/sera/",
+  "bin": {
+    "sera-download": "scripts/sera-download"
+  },
   "scripts": {
     "postinstall": "npm run vendor",
     "vendor": "node scripts/vendor.js",

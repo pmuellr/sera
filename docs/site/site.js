@@ -37,6 +37,23 @@
  *   p50: number; p90: number; p95: number; p99: number }} Stats
  */
 
+/**
+ * A sera data file, as written by scripts/sera-download: the response for
+ * each page, as the property named by the page's id, like `rules` or
+ * `task-manager-health`, and a `meta` property describing the file: when the
+ * data was downloaded, from which Kibana and Elasticsearch URLs, and the
+ * errors of the requests that failed, by page id.
+ * @typedef {{
+ *   format: 'sera-data';
+ *   version: number;
+ *   timestamp?: string;
+ *   kibanaUrl?: string;
+ *   elasticsearchUrl?: string;
+ *   errors?: Record<string, string>;
+ * }} DataFileMeta
+ * @typedef {{ meta: DataFileMeta; [pageId: string]: unknown }} DataFile
+ */
+
 /** @typedef {import('../vendor/discover-url.js').DiscoverUrlParams} DiscoverUrlParams */
 /** @typedef {import('../vendor/discover-url.js').FilterParam} FilterParam */
 
@@ -48,6 +65,7 @@ const ROOT_URL = new URL('..', /** @type {HTMLScriptElement} */ (document.curren
 const SETTINGS_KEY = 'sera.settings';
 const SETTINGS_EVENT = 'sera-settings-changed';
 const INPUT_KEY_PREFIX = 'sera.input.';
+const DATA_FILE_FORMAT = 'sera-data';
 const COLLAPSED_KEY = 'sera.collapsed';
 const TAGS_KEY = 'sera.tags';
 const RECENT_TAGS_KEY = 'sera.tags.recent';
@@ -548,6 +566,31 @@ function saveInput(storageKey, text, source) {
     sessionStorage.removeItem(key);
     return false;
   }
+}
+
+/** @type {(storageKey: string) => void} */
+function removeInput(storageKey) {
+  sessionStorage.removeItem(INPUT_KEY_PREFIX + storageKey);
+}
+
+// ---------------------------------------------------------------------------
+// sera data files
+// ---------------------------------------------------------------------------
+
+/**
+ * The sera data file in text, or undefined if it isn't one.
+ * @type {(text: string) => DataFile | undefined}
+ */
+function parseDataFile(text) {
+  if (!/^\s*\{/.test(text) || !text.includes(DATA_FILE_FORMAT)) return undefined;
+  /** @type {any} */
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  return value?.meta?.format === DATA_FILE_FORMAT ? value : undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -1157,6 +1200,8 @@ return {
   inputPanel,
   dataPanel,
   saveInput,
+  removeInput,
+  parseDataFile,
   parseJsonValues,
   splitDevToolsOutput,
   get,

@@ -1,0 +1,257 @@
+#!/usr/bin/env node
+// @ts-check
+
+// Download the data the sera pages analyze, with the same requests the pages
+// show for Dev Tools, into a sera data file in the current directory, named
+// for Kibana's hostname and the time, like localhost-26-11-09-17-38.sera.json.
+// Load it on the sera home page.
+// The rules and connectors are the default space's.
+//
+//   ES_URL       Elasticsearch URL, default http://localhost:9200
+//   KB_URL       Kibana URL, including any base path, default http://localhost:5601
+//   ES_API_KEY   an API key, sent as "Authorization: ApiKey ..." to both
+//   ES_USERNAME  without an API key, the user, default elastic
+//   ES_PASSWORD  without an API key, the user's password, default changeme
+//
+// Without an API key, a user and password in a URL, like
+// http://elastic:changeme@localhost:9200, are used for that URL.
+//
+// The defaults are those of a local development Elasticsearch and Kibana.
+// It uses no npm packages, and needs Node.js 18 or later, for fetch.
+
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const DEFAULTS = {
+  ES_URL: 'http://localhost:9200',
+  KB_URL: 'http://localhost:5601',
+  ES_USERNAME: 'elastic',
+  ES_PASSWORD: 'changeme',
+};
+
+/**
+ * The requests, by the ids of the pages that analyze them, which are their
+ * property names in the sera data file.
+ * @type {{ page: string; title: string; service: 'kibana' | 'elasticsearch'; path: string }[]}
+ */
+const REQUESTS = [
+  { page: 'task-manager-health', title: 'Task Manager health', service: 'kibana', path: '/api/task_manager/_health' },
+  { page: 'rules', title: 'rules', service: 'kibana', path: '/api/alerting/rules/_find?per_page=10000' },
+  { page: 'connectors', title: 'connectors', service: 'kibana', path: '/api/actions/connectors' },
+  { page: 'event-log', title: 'event log', service: 'elasticsearch', path: '/.kibana-event-log-*/_search?size=10000&sort=@timestamp:desc' },
+  { page: 'alerts', title: 'alerts', service: 'elasticsearch', path: '/.alerts-*/_search?size=10000&sort=@timestamp:desc' },
+];
+
+main().catch(function (err) {
+  console.error(err instanceof Error ? err.message : err);
+  process.exitCode = 1;
+});
+
+async function main() {
+  if (process.argv.slice(2).some(function (arg) { return arg === '-h' || arg === '--help'; })) {
+    printHelp();
+    return;
+  }
+
+  const services = {
+    elasticsearch: service('ES_URL'),
+    kibana: service('KB_URL'),
+  };
+  printColumns([
+    ['Elasticsearch', services.elasticsearch.baseUrl],
+    ['Kibana', services.kibana.baseUrl],
+  ]);
+  console.log('');
+  const baseUrls = { elasticsearch: services.elasticsearch.baseUrl, kibana: services.kibana.baseUrl };
+
+  const created = new Date();
+  const results = await Promise.all(REQUESTS.map(function (request) {
+    return download(baseUrls[request.service] + request.path, services[request.service].authorization);
+  }));
+
+  /** @type {Record<string, string>} */
+  const errors = {};
+  /** @type {{ format: string; version: number; timestamp: string; kibanaUrl: string; elasticsearchUrl: string; errors?: Record<string, string> }} */
+  const meta = {
+    format: 'sera-data',
+    version: 1,
+    timestamp: created.toISOString(),
+    kibanaUrl: baseUrls.kibana,
+    elasticsearchUrl: baseUrls.elasticsearch,
+  };
+  /** @type {Record<string, unknown>} */
+  const dataFile = { meta };
+  printColumns(REQUESTS.map(function (request, index) {
+    const result = results[index];
+    if (result.error === undefined) {
+      dataFile[request.page] = result.value;
+      return [request.title, countOf(result.value)];
+    }
+    errors[request.page] = result.error;
+    return [request.title, `error: ${result.error}`];
+  }));
+  console.log('');
+  if (Object.keys(errors).length > 0) meta.errors = errors;
+
+  const failures = Object.keys(errors).length;
+  if (failures === REQUESTS.length) {
+    throw new Error('all of the requests failed, so no file was written');
+  }
+
+  const hostname = new URL(services.kibana.baseUrl).hostname.replace(/[^a-z0-9.-]+/gi, '_');
+  const fileName = `${hostname}-${timestamp(created)}.sera.json`;
+  fs.writeFileSync(fileName, JSON.stringify(dataFile));
+  console.log(`wrote ${fileName}; load it on the sera home page`);
+
+  if (failures > 0) {
+    console.error(failures === 1 ? '1 request failed' : `${failures} requests failed`);
+    process.exitCode = 1;
+  }
+}
+
+/** @type {(rows: [string, string][]) => void} */
+function printColumns(rows) {
+  const width = Math.max(...rows.map(function ([label]) { return label.length; })) + 1;
+  for (const [label, value] of rows) console.log(`${`${label}:`.padEnd(width)} ${value}`);
+}
+
+/**
+ * How many were downloaded, and of how many, if there are more, from a
+ * response of the APIs or a search.
+ * @type {(value: any) => string}
+ */
+function countOf(value) {
+  /** @type {any[]} */
+  let items;
+  /** @type {number | string | undefined} */
+  let total;
+  if (Array.isArray(value)) {
+    items = value;
+  } else if (Array.isArray(value?.data)) {
+    items = value.data;
+    total = value.total;
+  } else if (Array.isArray(value?.hits?.hits)) {
+    items = value.hits.hits;
+    const hitsTotal = value.hits.total;
+    total = typeof hitsTotal === 'number' ? hitsTotal
+      : hitsTotal?.relation === 'gte' ? `more than ${formatNumber(hitsTotal.value)}` : hitsTotal?.value;
+  } else {
+    return '1';
+  }
+  const count = formatNumber(items.length);
+  if (typeof total === 'string') return `${count} of ${total}`;
+  return total !== undefined && total > items.length ? `${count} of ${formatNumber(total)}` : count;
+}
+
+/** @type {(n: number) => string} */
+function formatNumber(n) {
+  return n.toLocaleString('en-US');
+}
+
+/** @type {(name: keyof typeof DEFAULTS) => string} */
+function env(name) {
+  return process.env[name] || DEFAULTS[name];
+}
+
+/**
+ * The URL in the environment variable, without the user and password it may
+ * have, since fetch doesn't allow them, and the Authorization header to
+ * send: of the API key, or else the URL's user and password, or else
+ * ES_USERNAME and ES_PASSWORD.
+ * @type {(name: 'ES_URL' | 'KB_URL') => { baseUrl: string; authorization: string }}
+ */
+function service(name) {
+  /** @type {URL} */
+  let url;
+  try {
+    url = new URL(env(name));
+  } catch {
+    throw new Error(`${name} isn't a URL`);
+  }
+  const username = decodeURIComponent(url.username);
+  const password = decodeURIComponent(url.password);
+  url.username = '';
+  url.password = '';
+  const baseUrl = url.href.replace(/\/+$/, '');
+
+  if (process.env.ES_API_KEY) {
+    return { baseUrl, authorization: `ApiKey ${process.env.ES_API_KEY}` };
+  }
+  const user = username || env('ES_USERNAME');
+  const userPassword = username ? password : env('ES_PASSWORD');
+  return {
+    baseUrl,
+    authorization: `Basic ${Buffer.from(`${user}:${userPassword}`).toString('base64')}`,
+  };
+}
+
+/**
+ * GET the URL, and parse the response as JSON.  The error is set if the
+ * request failed, or the response isn't JSON.
+ * @type {(url: string, authorization: string) => Promise<{ status?: number; value?: unknown; error?: string }>}
+ */
+async function download(url, authorization) {
+  /** @type {Response} */
+  let response;
+  try {
+    response = await fetch(url, { headers: { Authorization: authorization, Accept: 'application/json' } });
+  } catch (err) {
+    const error = /** @type {any} */ (err);
+    return { error: `request failed: ${error?.cause?.message ?? error?.message ?? error}` };
+  }
+
+  const text = await response.text();
+  /** @type {any} */
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    value = undefined;
+  }
+  if (!response.ok) {
+    return { status: response.status, error: `${response.status} ${errorMessage(value) ?? response.statusText}` };
+  }
+  if (value === undefined) return { status: response.status, error: `${response.status} the response isn't JSON` };
+  return { status: response.status, value };
+}
+
+/**
+ * The message of an Elasticsearch or Kibana error response.
+ * @type {(value: any) => string | undefined}
+ */
+function errorMessage(value) {
+  const message = value?.message ?? value?.error?.reason ?? value?.error;
+  return typeof message === 'string' ? message : undefined;
+}
+
+/**
+ * The year, month, day, hour, and minute, like 26-11-09-17-38.
+ * @type {(date: Date) => string}
+ */
+function timestamp(date) {
+  /** @type {(n: number) => string} */
+  function pad(n) { return String(n).padStart(2, '0'); }
+  return [date.getFullYear() % 100, date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes()]
+    .map(pad).join('-');
+}
+
+function printHelp() {
+  const name = path.basename(__filename);
+  console.log(`usage: ${name}
+
+Downloads the data the sera pages analyze into a sera data file in the
+current directory, named for Kibana's hostname and the time, like
+localhost-26-11-09-17-38.sera.json.
+
+environment variables:
+  ES_URL       Elasticsearch URL, default ${DEFAULTS.ES_URL}
+  KB_URL       Kibana URL, including any base path, default ${DEFAULTS.KB_URL}
+  ES_API_KEY   an API key, used for both, instead of a user and password
+  ES_USERNAME  the user, default ${DEFAULTS.ES_USERNAME}
+  ES_PASSWORD  the user's password, default ${DEFAULTS.ES_PASSWORD}
+
+Without an API key, a user and password in a URL, like
+http://elastic:changeme@localhost:9200, are used for that URL.`);
+}

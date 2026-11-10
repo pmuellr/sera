@@ -11,7 +11,7 @@ const ROOT = path.join(import.meta.dirname, '..');
 
 /**
  * Load site.js and kibana-data.js, with just enough of a browser to do so.
- * @returns {{ Site: typeof Site; KibanaData: typeof KibanaData }}
+ * @returns {{ Site: typeof Site; KibanaData: typeof KibanaData; sessionStorage: Pick<Storage, 'getItem'> }}
  */
 function loadScripts() {
   const context = vm.createContext({
@@ -19,15 +19,30 @@ function loadScripts() {
       currentScript: { src: 'http://localhost/site/site.js' },
       addEventListener: function () {},
     },
-    window: { addEventListener: function () {} },
+    window: { addEventListener: function () {}, dispatchEvent: function () {} },
+    CustomEvent: class CustomEvent {},
     URL,
     URLSearchParams,
-    console,
+    // IndexedDB isn't available, so the data is kept in memory
+    console: { ...console, warn: function () {} },
+    sessionStorage: memoryStorage(),
+    localStorage: memoryStorage(),
   });
   for (const file of ['docs/site/site.js', 'docs/site/kibana-data.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context, { filename: file });
   }
-  return vm.runInContext('({ Site, KibanaData })', context);
+  return vm.runInContext('({ Site, KibanaData, sessionStorage })', context);
+}
+
+/** @returns {Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>} */
+function memoryStorage() {
+  /** @type {Map<string, string>} */
+  const items = new Map();
+  return {
+    getItem: function (key) { return items.get(key) ?? null; },
+    setItem: function (key, value) { items.set(key, value); },
+    removeItem: function (key) { items.delete(key); },
+  };
 }
 
 /** @param {string} name */
@@ -35,7 +50,7 @@ function fixture(name) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, 'test', 'fixtures', name), 'utf8'));
 }
 
-const { Site: site, KibanaData: kibanaData } = loadScripts();
+const { Site: site, KibanaData: kibanaData, sessionStorage: storage } = loadScripts();
 
 test('classifies each kind of search response', function () {
   const { records, totals } = kibanaData.classify([
@@ -214,7 +229,7 @@ test('finds the space in requests', function () {
   assert.equal(kibanaData.spaceFromRequest('GET kbn:/api/alerting/rules/_find?per_page=10000'), 'default');
   assert.equal(kibanaData.spaceFromRequest('GET kbn:/s/my_team-2/api/actions/connectors'), 'my_team-2');
   assert.equal(kibanaData.spaceFromRequest('GET /s/security/api/actions/connectors'), 'security');
-  assert.equal(kibanaData.spaceFromRequest('GET .alerts-*/_search?size=2000'), undefined);
+  assert.equal(kibanaData.spaceFromRequest('GET .alerts-*/_search?size=10000'), undefined);
   assert.equal(kibanaData.requestInSpace(kibanaData.KINDS.connectors.query, 'security'), 'GET kbn:/s/security/api/actions/connectors');
   assert.equal(kibanaData.requestInSpace(kibanaData.KINDS.connectors.query, 'default'), kibanaData.KINDS.connectors.query);
 });
@@ -242,6 +257,65 @@ test('splits Dev Tools output into each request\'s response', function () {
   assert.ok(classified.records.rules.every(function (/** @type {Rule} */ rule) { return rule.space === 'security'; }));
 
   assert.deepEqual([...site.splitDevToolsOutput('{"a": 1}')].map(function (part) { return { ...part }; }), [{ text: '{"a": 1}' }]);
+});
+
+test('loads a sera data file', async function () {
+  const text = JSON.stringify({
+    meta: {
+      format: 'sera-data',
+      version: 1,
+      timestamp: '2026-11-09T22:17:00.000Z',
+      kibanaUrl: 'https://kibana.example.com',
+      elasticsearchUrl: 'https://elasticsearch.example.com',
+      errors: { connectors: '403 Unauthorized to get actions' },
+    },
+    'task-manager-health': fixture('task-manager-health.json'),
+    rules: fixture('rules-space-default.json'),
+    'event-log': fixture('event-log-search.json'),
+    alerts: fixture('alerts-search.json'),
+  });
+  assert.equal(site.parseDataFile(JSON.stringify(fixture('rules-space-default.json'))), undefined);
+  assert.equal(site.parseDataFile('{ "meta": { "format": "sera-data" '), undefined);
+  assert.equal(site.parseDataFile('{ "meta": { "format": "something else" } }'), undefined);
+  const dataFile = site.parseDataFile(text);
+  assert.ok(dataFile);
+
+  await kibanaData.saveClassified(kibanaData.classifyFiles([
+    { name: 'connectors-space-default.json', text: JSON.stringify(fixture('connectors-space-default.json')) },
+  ]), 'connectors-space-default.json');
+  const loaded = await kibanaData.loadDataFile(dataFile, '1109-1717-sera.json');
+  assert.deepEqual([...loaded.map(function (item) { return { ...item }; })], [
+    { page: 'task-manager-health', text: 'the health report' },
+    { page: 'rules', text: '11 rules' },
+    { page: 'alerts', text: '25 alerts' },
+    { page: 'event-log', text: '601 event log documents' },
+  ]);
+
+  const data = await kibanaData.load();
+  assert.equal(data.connectors, undefined, 'the connectors loaded before are replaced by none');
+  assert.equal(data.rules?.source, '1109-1717-sera.json');
+  assert.ok(data.rules?.records.every(function (/** @type {Rule} */ rule) { return rule.space === 'default'; }));
+  assert.equal(data.events?.records.length, 601);
+
+  const health = JSON.parse(storage.getItem('sera.input.task-manager-health') ?? 'null');
+  assert.equal(health.source, '1109-1717-sera.json');
+  assert.deepEqual(JSON.parse(health.text), fixture('task-manager-health.json'));
+
+  assert.equal(site.getSettings().kibanaUrl, 'https://kibana.example.com', 'the Kibana URL setting is the file\'s');
+  assert.deepEqual([...kibanaData.dataFileNotes(dataFile)], [
+    'downloaded 2026-11-09 22:17:00.000 from Kibana at https://kibana.example.com and Elasticsearch at https://elasticsearch.example.com',
+    'the request for connectors failed: 403 Unauthorized to get actions',
+  ]);
+});
+
+test('a sera data file replaces the Kibana URL setting', async function () {
+  site.setSettings({ ...site.getSettings(), kibanaUrl: 'https://set-in-settings.example.com' });
+  const dataFile = site.parseDataFile(JSON.stringify({
+    meta: { format: 'sera-data', version: 1, kibanaUrl: 'https://from-the-file.example.com' },
+  }));
+  assert.ok(dataFile);
+  await kibanaData.loadDataFile(dataFile, 'kibana-url.sera.json');
+  assert.equal(site.getSettings().kibanaUrl, 'https://from-the-file.example.com');
 });
 
 test('parses intervals', function () {

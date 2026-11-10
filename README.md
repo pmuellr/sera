@@ -56,16 +56,23 @@ Each page shows the Kibana Dev Tools requests for its data; paste the output
 into the page.  The health report is stored in the browser tab's session
 storage, so it's kept while the tab is open.
 
-`scripts/download-data.sh` makes the same requests with curl, and saves the
-responses in `tmp/`, with a prefix of the month, day, hour, and minute, like
-`tmp/1105-2246-rules-space-default.json`.  It gets the rules and connectors
-of the default space only.  It uses these environment variables:
+`scripts/sera-download` makes the same requests, and writes all of the
+responses to a sera data file, described below, in the current directory,
+named for the hostname of the Kibana URL, and the year, month, day, hour,
+and minute, like `localhost-26-11-09-17-38.sera.json`.  It gets the rules and connectors of the default
+space only.  It needs Node.js 18 or later, and no npm packages.  Without settings, it uses a local development
+Elasticsearch and Kibana, with these environment variables:
 
-| variable     | value
-| ------------ | ---------------------------------------------------------------
-| `ES_URL`     | the Elasticsearch URL
-| `KB_URL`     | the Kibana URL, including any base path
-| `ES_API_KEY` | an API key, used for both Elasticsearch and Kibana
+| variable      | value                                               | default
+| ------------- | --------------------------------------------------- | -----------------------
+| `ES_URL`      | the Elasticsearch URL                               | `http://localhost:9200`
+| `KB_URL`      | the Kibana URL, including any base path             | `http://localhost:5601`
+| `ES_API_KEY`  | an API key, instead of a user and password          |
+| `ES_USERNAME` | the user, for both Elasticsearch and Kibana         | `elastic`
+| `ES_PASSWORD` | the user's password                                 | `changeme`
+
+Without an API key, a user and password in a URL, like
+`http://elastic:changeme@localhost:9200`, are used for that URL.
 
 The API key needs Elasticsearch privileges to read the event log and alerts,
 and Kibana privileges to read the rules and connectors; without the Kibana
@@ -100,12 +107,44 @@ with `pbpaste`, then clear the clipboard:
     export KB_URL=https://kibana.example.com
     export ES_API_KEY="$(pbpaste)"
     pbcopy < /dev/null
-    scripts/download-data.sh
+    scripts/sera-download
 
-The script prints the HTTP status and file of each request; it exits with an
-error if any of them failed, and the failed requests' files have their error
-responses.  Then load the files on the pages.  The files
-contain names and other details of the deployment, so share them with care.
+The script prints the HTTP status of each request, and the error of each one
+that failed; it exits with an error if any of them failed, and doesn't write
+the file if all of them did.  The file contains names and other details of
+the deployment, so share it with care.
+
+A sera data file is a JSON object with the response for each page, as the
+property named by the page's id, and a `meta` property describing the file:
+when the data was downloaded, from which Kibana and Elasticsearch URLs, without
+any user and password, and the errors of the requests that failed, which are
+left out:
+
+```json
+{
+  "meta": {
+    "format": "sera-data",
+    "version": 1,
+    "timestamp": "2026-11-05T22:46:00.000Z",
+    "kibanaUrl": "https://kibana.example.com",
+    "elasticsearchUrl": "https://elasticsearch.example.com",
+    "errors": { "connectors": "403 Unauthorized to get actions" }
+  },
+  "task-manager-health": { "...": "the response of GET kbn:/api/task_manager/_health" },
+  "rules": { "...": "the response of GET kbn:/api/alerting/rules/_find?per_page=10000" },
+  "event-log": { "...": "the response of the event log search" },
+  "alerts": { "...": "the response of the alerts search" }
+}
+```
+
+Load it with "load a sera data file" on the home page, or drop it on the
+home page, or on any of the rules, connectors, alerts, or event log pages.
+It replaces all of the data loaded before, so the kinds of data it doesn't
+have are cleared.  The Task Manager health report is analyzed when its page
+is opened in the same tab.  Its Kibana URL replaces the Kibana URL setting,
+so the links to Discover go to the Kibana it was downloaded from; the
+setting is for the data loaded from other files.
+On the Task Manager health page, a data file loads just its health report.
 
 The Task Manager health report is only complete from Kibana instances with
 the `background_tasks` node role.  On Elastic Cloud Hosted with Kibana larger
@@ -133,7 +172,7 @@ Everything served by GitHub Pages is in the `docs` directory:
     docs/
       index.html              home page, listing the pages
       site/
-        home.js               the home page: the list of pages, and notes on getting their data
+        home.js               the home page: loading a sera data file, the list of pages, and notes on getting their data
         pages.js              the list of pages, used to build the menu
         site.js               the menu, settings, data input, tables, formatting
         site.css              shared styles

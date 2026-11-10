@@ -156,8 +156,8 @@ const OLD_KINDS = ['tasks'];
 // the space of API responses, which don't say, from file names like rules-space-<id>.json
 const SPACE_FILE_PATTERN = /(?:^|[-_.])space-([a-z0-9_-]+)\.json$/i;
 
-const ALERTS_QUERY = 'GET .alerts-*/_search?size=2000&sort=@timestamp:desc';
-const EVENTS_QUERY = 'GET .kibana-event-log-*/_search?size=2000&sort=@timestamp:desc';
+const ALERTS_QUERY = 'GET .alerts-*/_search?size=10000&sort=@timestamp:desc';
+const EVENTS_QUERY = 'GET .kibana-event-log-*/_search?size=10000&sort=@timestamp:desc';
 
 const SPACES_HELP = 'The response doesn\'t say which space it\'s from, so run the requests for every space ' +
   'together, and paste all of the output; the space of each response is read from its request, in the line ' +
@@ -355,14 +355,15 @@ function splitConsoleOutput(name, text) {
  * Classify the files separately, so each file's space, or its name, can give
  * the space of its API responses, and combine them.  Connectors in more than
  * one file, like the preconfigured connectors in each space's connectors, are
- * kept once.
- * @type {(files: { name: string; text: string; space?: string }[]) => Classified}
+ * kept once.  A file can have its values already parsed, instead of text.
+ * @type {(files: { name: string; text?: string; values?: unknown[]; space?: string }[]) => Classified}
  */
 function classifyFiles(files) {
   /** @type {Classified & { sources: Partial<Record<DataKind, string[]>> }} */
   const result = { records: { rules: [], connectors: [], alerts: [], events: [] }, totals: {}, sources: {} };
   for (const file of files) {
-    const classified = classify(Site.parseJsonValues(file.text), file.space ?? spaceFromFileName(file.name));
+    const values = file.values ?? Site.parseJsonValues(file.text ?? '');
+    const classified = classify(values, file.space ?? spaceFromFileName(file.name));
     for (const kind of KIND_NAMES) {
       if (classified.records[kind].length > 0) result.sources[kind] = [...(result.sources[kind] || []), file.name];
       result.records[kind].push(...classified.records[kind]);
@@ -378,6 +379,83 @@ function classifyFiles(files) {
     return true;
   });
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// sera data files
+// ---------------------------------------------------------------------------
+
+const HEALTH_PAGE = 'task-manager-health';
+
+/**
+ * Save the data in a sera data file, replacing what was loaded before: the
+ * rules, connectors, alerts, and event log documents, whose properties are
+ * named by their pages' ids, and the Task Manager health report, which its
+ * page analyzes when it's opened in this tab.  The rules and connectors are
+ * the default space's.  The Kibana URL it was downloaded from replaces the
+ * Kibana URL setting, for the links to Discover.  Returns what was loaded,
+ * for each page.
+ * @type {(dataFile: DataFile, name: string) => Promise<{ page: string; text: string }[]>}
+ */
+async function loadDataFile(dataFile, name) {
+  const kibanaUrl = dataFile.meta.kibanaUrl;
+  if (kibanaUrl && kibanaUrl !== Site.getSettings().kibanaUrl) {
+    Site.setSettings({ ...Site.getSettings(), kibanaUrl });
+  }
+
+  const classified = classifyFiles(KIND_NAMES.flatMap(function (kind) {
+    const value = dataFile[KINDS[kind].page];
+    return value === undefined ? [] : [{ name, values: [value], space: 'default' }];
+  }));
+  await Promise.all(KIND_NAMES
+    .filter(function (kind) { return classified.records[kind].length === 0; })
+    .map(clear));
+  await saveClassified(classified, name);
+
+  const loaded = KIND_NAMES
+    .filter(function (kind) { return classified.records[kind].length > 0; })
+    .map(function (kind) {
+      const count = classified.records[kind].length;
+      return { page: KINDS[kind].page, text: `${Site.formatNumber(count)} ${count === 1 ? KINDS[kind].one : KINDS[kind].title}` };
+    });
+  const health = dataFile[HEALTH_PAGE];
+  if (health === undefined) {
+    Site.removeInput(HEALTH_PAGE);
+  } else if (Site.saveInput(HEALTH_PAGE, JSON.stringify(health, null, 2), name)) {
+    loaded.unshift({ page: HEALTH_PAGE, text: 'the health report' });
+  }
+  return loaded;
+}
+
+/**
+ * What a sera data file says about itself: when and where it was downloaded,
+ * and which requests failed.
+ * @type {(dataFile: DataFile) => string[]}
+ */
+function dataFileNotes(dataFile) {
+  return [dataFileSource(dataFile), ...dataFileErrors(dataFile)].filter(Boolean);
+}
+
+/**
+ * When and where a sera data file was downloaded, like
+ * `downloaded 2026-11-09 19:03:00.000 from Kibana at http://localhost:5601`.
+ * @type {(dataFile: DataFile) => string}
+ */
+function dataFileSource(dataFile) {
+  const { timestamp, kibanaUrl, elasticsearchUrl } = dataFile.meta;
+  const from = [
+    kibanaUrl && `Kibana at ${kibanaUrl}`,
+    elasticsearchUrl && `Elasticsearch at ${elasticsearchUrl}`,
+  ].filter(Boolean).join(' and ');
+  if (!timestamp && !from) return '';
+  return ['downloaded', timestamp && Site.formatDate(timestamp), from && `from ${from}`].filter(Boolean).join(' ');
+}
+
+/** @type {(dataFile: DataFile) => string[]} */
+function dataFileErrors(dataFile) {
+  return Object.entries(dataFile.meta.errors ?? {}).map(function ([page, error]) {
+    return `the request for ${page} failed: ${error}`;
+  });
 }
 
 /** @type {(value: unknown) => any[]} */
@@ -793,18 +871,18 @@ function panel(kind, onData) {
 
   const input = Site.inputPanel({
     placeholder: `paste the response for ${KINDS[kind].title} here, drop files on the page, or load files; ` +
-      'responses for rules, connectors, alerts, and the event log can be loaded on any of these pages',
+      'responses for rules, connectors, alerts, and the event log can be loaded on any of these pages, ' +
+      'and a sera data file loads all of them',
     onData: function (text, source) {
       if (text === '') {
-        update(clear(kind), '');
+        update(clear(kind).then(function () { return ''; }));
         return;
       }
-      loaded(classifyFiles(splitConsoleOutput(source, text)), source);
+      loaded([{ name: source, text }]);
     },
     onFiles: function (files) {
       try {
-        const parts = files.flatMap(function (file) { return splitConsoleOutput(file.name, file.text); });
-        loaded(classifyFiles(parts), files.map(function (file) { return file.name; }).join(', '));
+        loaded(files);
       } catch (err) {
         message.textContent = Site.errorMessage(err);
         message.classList.add('error');
@@ -813,32 +891,70 @@ function panel(kind, onData) {
   });
 
   const details = Site.dataPanel(input, message, status);
-  update(Promise.resolve(), '');
+  update(Promise.resolve(''));
   return details.element;
 
-  /** @type {(classified: Classified, source: string) => void} */
-  function loaded(classified, source) {
-    const summary = summarize(classified);
-    if (!summary) throw new Error('no rules, connectors, alerts, or event log documents found');
-    update(saveClassified(classified, source), `loaded ${summary} from ${source}`);
+  /**
+   * Load sera data files, and then the other files' responses.
+   * @type {(files: { name: string; text: string }[]) => void}
+   */
+  function loaded(files) {
+    /** @type {{ name: string; dataFile: DataFile }[]} */
+    const dataFiles = [];
+    /** @type {{ name: string; text: string; space?: string }[]} */
+    const parts = [];
+    for (const file of files) {
+      const dataFile = Site.parseDataFile(file.text);
+      if (dataFile) dataFiles.push({ name: file.name, dataFile });
+      else parts.push(...splitConsoleOutput(file.name, file.text));
+    }
+    const classified = parts.length > 0 ? classifyFiles(parts) : undefined;
+    const summary = classified && summarize(classified);
+    if (classified && !summary && dataFiles.length === 0) {
+      throw new Error('no rules, connectors, alerts, or event log documents found');
+    }
+
+    /** @type {string[]} */
+    const messages = [];
+    let saving = Promise.resolve();
+    for (const { name, dataFile } of dataFiles) {
+      saving = saving
+        .then(function () { return loadDataFile(dataFile, name); })
+        .then(function (pages) {
+          const what = pages.map(function (page) { return page.text; }).join(', ') || 'nothing';
+          messages.push([`loaded ${what} from ${name}`, ...dataFileNotes(dataFile)].join('; '));
+        });
+    }
+    if (classified && summary) {
+      const source = parts.length === 1 ? parts[0].name : files.map(function (file) { return file.name; }).join(', ');
+      saving = saving.then(function () {
+        messages.push(`loaded ${summary} from ${source}`);
+        return saveClassified(classified, source);
+      });
+    }
+    update(saving.then(function () { return messages.join('; '); }));
   }
 
-  /** @type {(saving: Promise<unknown>, text: string) => void} */
-  function update(saving, text) {
+  /** @type {(saving: Promise<string>) => void} */
+  function update(saving) {
     saving
-      .then(load)
-      .then(function (data) {
+      .then(function (text) {
+        return load().then(function (data) { return { data, text }; });
+      })
+      .then(function ({ data, text }) {
         message.textContent = text;
         message.classList.remove('error');
-        status.replaceChildren(renderStatus(data, kind, function (cleared) { update(clear(cleared), ''); }));
-        const loaded = KIND_NAMES.flatMap(function (name) {
+        status.replaceChildren(renderStatus(data, kind, function (cleared) {
+          update(clear(cleared).then(function () { return ''; }));
+        }));
+        const counts = KIND_NAMES.flatMap(function (name) {
           const dataSet = data[name];
           if (!dataSet) return [];
           return [`${countText(dataSet)} ${dataSet.records.length === 1 ? KINDS[name].one : KINDS[name].title}`];
         });
         details.update(
-          loaded.length ? loaded.join(', ') : 'nothing loaded; paste a response, drop files on the page, or load files',
-          loaded.length > 0);
+          counts.length ? counts.join(', ') : 'nothing loaded; paste a response, drop files on the page, or load files',
+          counts.length > 0);
         onData(data);
       })
       .catch(function (err) {
@@ -1020,6 +1136,10 @@ return {
   spaceFromRequest,
   requestInSpace,
   saveClassified,
+  loadDataFile,
+  dataFileNotes,
+  dataFileSource,
+  dataFileErrors,
   summarize,
   parseInterval,
   load,

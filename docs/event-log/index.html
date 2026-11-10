@@ -17,7 +17,7 @@
   <p>
     Analyze Kibana event log documents, from the <code>.kibana-event-log-*</code>
     indices.  Provide a search response, like the output of
-    <code>GET .kibana-event-log-*/_search?size=2000&amp;sort=@timestamp:desc</code> in Dev Tools, or an
+    <code>GET .kibana-event-log-*/_search?size=10000&amp;sort=@timestamp:desc</code> in Dev Tools, or an
     ES|QL response, a JSON array of documents, or NDJSON with one document per
     line.  Multiple responses can be provided together.  The documents are
     shared with the rules, connectors, and alerts pages, and can be loaded on
