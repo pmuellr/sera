@@ -7,7 +7,8 @@ Kibana Task Manager health report and Kibana event log documents.  Paste JSON
 into a page, drop a file on it, or load a file; the data stays in your
 browser.
 
-The pages are hosted with GitHub Pages at <https://pmuellr.github.io/sera/>
+The pages are hosted with GitHub Pages at <https://pmuellr.github.io/sera/>,
+with demo data loaded the first time they're opened.
 
 | page                                    | analyzes
 | --------------------------------------- | ---------------------------------------------
@@ -29,6 +30,23 @@ other across the pages.  Each page shows the Dev Tools request for each kind
 of data; the requests leave out API keys and secrets, and the pages drop them
 if they're there anyway.  The data stays until it's cleared on one of the
 pages.
+
+As well as displaying info on single-type resources, there's the 
+TrailBlazer browser, loosely based on the IBM Smalltalk TrailBlazer Browser
+from Chris Gerkin.  There's no good description I've found of it, but I
+would describe it as an explorer of relationships of one object with
+others.  As you click on things, you explore a new relationship or
+fine tune on something specific.  Clicking on something generally opens
+another pane to the right.  So yeah, [Gopher](https://en.wikipedia.org/wiki/Gopher_(protocol)) for Smalltalk resources.  Applicable to other object shapes tho!
+Thanks for the memory, Chris!
+
+Here's the demo:
+[![TrailBlazer, following a trail from a rule to its alerts and event log documents](docs/demo/trailblazer.png)][TrailBlazer video]
+
+[The TrailBlazer video][TrailBlazer video] starts on the home page with the
+demo data, and follows a trail in TrailBlazer: from the rules, to a rule with
+9 active alerts, to one of its alerts, to the event log documents for that
+alert.
 
 Each set of loaded data is a session, and the pages show the current one.
 Loading a sera data file starts a new session, named for the file.
@@ -222,6 +240,7 @@ them.
 [connectors]: https://pmuellr.github.io/sera/connectors/index.html
 [alerts]: https://pmuellr.github.io/sera/alerts/index.html
 [TrailBlazer]: https://pmuellr.github.io/sera/trailblazer/index.html
+[TrailBlazer video]: https://pmuellr.github.io/sera/demo/trailblazer.mp4
 [discover-url]: https://github.com/pmuellr/discover-url
 [discover-url examples]: https://github.com/pmuellr/discover-url/blob/main/EXAMPLES.md
 
